@@ -14,6 +14,7 @@ module Parse
 -}
 
 import Char
+import List
 import Parser exposing (..)
 import String
 import Types exposing (..)
@@ -42,19 +43,19 @@ bigInteger =
         |. symbol "N"
 
 
-isWhitespace : Char -> Bool
-isWhitespace c =
-    c == ' ' || c == '\t' || c == '\n' || c == '\x0D'
+isSpace : Char -> Bool
+isSpace c =
+    c == ',' || c == ' ' || c == '\t' || c == '\n' || c == '\x0D'
 
 
-whitespace : Parser ()
-whitespace =
-    Parser.ignore Parser.zeroOrMore isWhitespace
+space : Parser ()
+space =
+    Parser.ignore Parser.zeroOrMore isSpace
 
 
-whitespaceSep : Parser ()
-whitespaceSep =
-    Parser.ignore Parser.oneOrMore isWhitespace
+spaceSep : Parser ()
+spaceSep =
+    Parser.ignore Parser.oneOrMore isSpace
 
 
 bool : Parser Value
@@ -131,6 +132,32 @@ char =
             ]
 
 
+list : Parser Value
+list =
+    succeed List
+        |. symbol "("
+        |. space
+        |= oneOf
+            [ succeed (::)
+                |= lazy (\_ -> value)
+                |= repeat zeroOrMore
+                    (succeed identity |. spaceSep |= lazy (\_ -> value))
+                |. symbol ")"
+            , succeed [] |. symbol ")"
+            ]
+
+
+value : Parser Value
+value =
+    oneOf
+        [ nil
+        , integer
+        , bool
+        , string
+        , list
+        ]
+
+
 
 {-
    | Symbol String
@@ -138,7 +165,6 @@ char =
    | Float Float
    | BigFloat Float
    | Set (List Value)
-   | List (List Value)
    | Vector (List Value)
    | Map (List (Value, Value))
    | Tagged String Value
