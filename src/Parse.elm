@@ -31,7 +31,16 @@ nil =
 -}
 integer : Parser Value
 integer =
-    succeed Int |= int
+    succeed Int
+        |= oneOf
+            [ succeed ((*) -1)
+                |. symbol "-"
+                |= int
+            , succeed identity
+                |. symbol "+"
+                |= int
+            , int
+            ]
 
 
 {-| Parse an EDN arbitrary precision integer
