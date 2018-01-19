@@ -3,6 +3,7 @@ module Parse
         ( bigInteger
         , integer
         , string
+        , bool
         )
 
 {-| Parsing EDN
@@ -68,6 +69,7 @@ spaceSep =
     Parser.ignore Parser.oneOrMore isSpace
 
 
+{-| Parse an EDN bool -}
 bool : Parser Value
 bool =
     succeed Bool

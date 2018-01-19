@@ -27,5 +27,10 @@ suite =
                     Expect.equal
                         (Ok (Types.String "a string\twith\\escape\"'s"))
                         (Parser.run Parse.string "\"a string\\twith\\\\escape\\\"'s\"")
+            , test "parse a known bool" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (Types.Bool True))
+                        (Parser.run Parse.bool "true")
             ]
         ]
