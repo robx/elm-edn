@@ -3,7 +3,7 @@
 all: build
 
 build:
-	elm-make src/Main.elm --yes --output ../static/main.js
+	elm-make --yes
 
 format:
 	elm-format --yes src
