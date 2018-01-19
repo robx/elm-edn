@@ -16,21 +16,21 @@ suite =
                 \_ ->
                     Expect.equal
                         (Ok (Types.Int 42))
-                        (Parser.run Parse.integer "42")
+                        (Parser.run Parse.value "42")
             , fuzz int "parses a random integer" <|
                 \i ->
                     Expect.equal
                         (Ok (Types.Int i))
-                        (Parser.run Parse.integer (toString i))
+                        (Parser.run Parse.value (toString i))
             , test "parse a known string" <|
                 \_ ->
                     Expect.equal
                         (Ok (Types.String "a string\twith\\escape\"'s"))
-                        (Parser.run Parse.string "\"a string\\twith\\\\escape\\\"'s\"")
+                        (Parser.run Parse.value "\"a string\\twith\\\\escape\\\"'s\"")
             , test "parse a known bool" <|
                 \_ ->
                     Expect.equal
                         (Ok (Types.Bool True))
-                        (Parser.run Parse.bool "true")
+                        (Parser.run Parse.value "true")
             ]
         ]

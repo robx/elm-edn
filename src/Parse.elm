@@ -1,9 +1,10 @@
 module Parse
     exposing
         ( bigInteger
+        , bool
         , integer
         , string
-        , bool
+        , value
         )
 
 {-| Parsing EDN
@@ -69,7 +70,8 @@ spaceSep =
     Parser.ignore Parser.oneOrMore isSpace
 
 
-{-| Parse an EDN bool -}
+{-| Parse an EDN bool
+-}
 bool : Parser Value
 bool =
     succeed Bool
@@ -161,6 +163,8 @@ list =
             ]
 
 
+{-| Parse an EDN value
+-}
 value : Parser Value
 value =
     oneOf
