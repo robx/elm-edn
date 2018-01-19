@@ -2,6 +2,7 @@ module Parse
     exposing
         ( bigInteger
         , integer
+        , string
         )
 
 {-| Parsing EDN
@@ -76,6 +77,8 @@ bool =
             ]
 
 
+{-| Parses an EDN string
+-}
 string : Parser Value
 string =
     let

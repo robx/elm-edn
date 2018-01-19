@@ -22,5 +22,10 @@ suite =
                     Expect.equal
                         (Ok (Types.Int i))
                         (Parser.run Parse.integer (toString i))
+            , test "parse a known string" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (Types.String "a string\twith\\escape\"'s"))
+                        (Parser.run Parse.string "\"a string\\twith\\\\escape\\\"'s\"")
             ]
         ]
