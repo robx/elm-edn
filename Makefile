@@ -6,4 +6,7 @@ build:
 	elm-make --yes
 
 format:
-	elm-format --yes src
+	elm-format --yes src tests
+
+test:
+	elm-test
