@@ -16,8 +16,8 @@ import String
 import Types exposing (..)
 
 
-genwords : Parser () -> Parser a -> Parser a -> Parser () -> Parser (List a)
-genwords separator interruptWord noninterruptWord after =
+genwords : Parser () -> Parser a -> Parser a -> Parser (List a)
+genwords separator interruptWord noninterruptWord =
     let
         word =
             oneOf
@@ -33,17 +33,15 @@ genwords separator interruptWord noninterruptWord after =
 
         moreWords =
             oneOf
-                [ succeed []
-                    |. after
-                , sepWord |> andThen (\w -> map (\ws -> w :: ws) moreWords)
+                [ sepWord |> andThen (\w -> map (\ws -> w :: ws) moreWords)
+                , succeed []
                 ]
     in
     oneOf
-        [ succeed []
-            |. after
-        , succeed (::)
+        [ succeed (::)
             |= word
             |= moreWords
+        , succeed []
         ]
 
 
@@ -61,7 +59,7 @@ words2 =
         separate =
             ignore oneOrMore (\c -> c == ' ')
     in
-    genwords separate upword lowword end
+    genwords separate upword lowword
 
 
 words : Parser (List String)
@@ -118,11 +116,12 @@ tlist : Parser Thing
 tlist =
     let
         things =
-            genwords (symbol " ") (lazy |> (\_ -> tlist)) tword (symbol ")")
+            genwords (symbol " ") (lazy |> (\_ -> tlist)) tword
     in
     succeed Things
         |. symbol "("
         |= things
+        |. symbol ")"
 
 
 seq2 : String -> String -> Parser (List Value)
