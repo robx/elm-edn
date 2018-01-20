@@ -16,6 +16,33 @@ import String
 import Types exposing (..)
 
 
+seq2 : String -> String -> Parser (List Value)
+seq2 start end =
+    let
+        sepValue : Parser Value
+        sepValue =
+            oneOf
+                [ succeed List |= seq2 "(" ")"
+                , vector
+                , mapp
+                , set
+                , delayedCommit spaceSep value
+                ]
+
+        values : Parser (List Value)
+        values =
+            oneOf
+                [ succeed (::)
+                    |= sepValue
+                    |= (lazy <| \_ -> values)
+                , succeed []
+                ]
+    in
+    symbol start
+        |- values
+        |. delayedCommit spaceSep (symbol end)
+
+
 seq : String -> String -> Parser (List Value)
 seq start end =
     let
