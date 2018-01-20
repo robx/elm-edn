@@ -77,5 +77,17 @@ suite =
                     Expect.equal
                         (Ok (List [ Bool False, String "hello, world", Int -15 ]))
                         (Parser.run Parse.value """(false "hello, world",  -15,)""")
+            , test "nesting things" <|
+                \_ ->
+                    Expect.equal
+                        (Ok
+                            (Vector
+                                [ List [ Int 1, String "yo" ]
+                                , Nil
+                                , Map [ ( List [ Bool True ], String "who" ), ( Nil, Int -3 ) ]
+                                ]
+                            )
+                        )
+                        (Parser.run Parse.value """[ (1, "yo"), nil, {(true) "who", nil -3} ]""")
             ]
         ]
