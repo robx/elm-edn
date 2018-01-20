@@ -1,4 +1,4 @@
-module Parse exposing (value)
+module Parse exposing (value, words)
 
 {-| Parsing EDN
 
@@ -16,6 +16,46 @@ import String
 import Types exposing (..)
 
 
+words : Parser (List String)
+words =
+    let
+        upword =
+            succeed (++)
+                |= keep (Exactly 1) Char.isUpper
+                |= keep zeroOrMore Char.isLower
+
+        lowword =
+            keep oneOrMore Char.isLower
+
+        word =
+            oneOf
+                [ upword
+                , lowword
+                ]
+
+        sepWord =
+            oneOf
+                [ upword
+                , delayedCommit separate word
+                ]
+
+        separate =
+            ignore oneOrMore (\c -> c == ' ')
+
+        moreWords =
+            oneOf
+                [ sepWord |> andThen (\w -> map (\ws -> w :: ws) moreWords)
+                , succeed []
+                ]
+    in
+    oneOf
+        [ succeed (::)
+            |= word
+            |= moreWords
+        , succeed []
+        ]
+
+
 seq2 : String -> String -> Parser (List Value)
 seq2 start end =
     let
@@ -29,18 +69,28 @@ seq2 start end =
                 , delayedCommit spaceSep value
                 ]
 
+        moreValues : Parser (List Value)
+        moreValues =
+            oneOf
+                [ sepValue |> andThen (\v -> map (\vs -> v :: vs) moreValues)
+                , succeed []
+                ]
+
         values : Parser (List Value)
         values =
             oneOf
                 [ succeed (::)
-                    |= sepValue
-                    |= (lazy <| \_ -> values)
+                    |= value
+                    |= moreValues
                 , succeed []
                 ]
     in
-    symbol start
-        |- values
-        |. delayedCommit spaceSep (symbol end)
+    succeed identity
+        |. symbol start
+        |. space
+        |= values
+        |. space
+        |. symbol end
 
 
 seq : String -> String -> Parser (List Value)

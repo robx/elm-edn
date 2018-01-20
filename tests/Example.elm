@@ -89,32 +89,46 @@ suite =
                             )
                         )
                         (Parser.run Parse.value """[ (1, "yo"), nil, {(true) "who", nil -3} ]""")
-            , test "list of empty maps" <|
-                \_ ->
-                    Expect.equal
-                        (Ok (List [ Map [], Map [], Map [] ]))
-                        (Parser.run Parse.value "({}{}{})")
-            , test "triples event" <|
-                \_ ->
-                    Expect.equal
-                        (Ok
-                            (Map
-                                [ ( Symbol "cols", Int 4 )
-                                , ( Symbol "rows", Int 3 )
-                                , ( Symbol "deckSize", Int 0 )
-                                , ( Symbol "cards", Map [] )
-                                , ( Symbol "scores"
-                                  , Map
-                                        [ ( Symbol "match", Int 0 )
-                                        , ( Symbol "matchWrong", Int 0 )
-                                        , ( Symbol "noMatch", Int 0 )
-                                        , ( Symbol "noMatchWrong", Int 0 )
-                                        ]
-                                  )
-                                ]
+            , skip <|
+                test "list of empty maps" <|
+                    \_ ->
+                        Expect.equal
+                            (Ok (List [ Map [], Map [], Map [] ]))
+                            (Parser.run Parse.value "({}{}{})")
+            , skip <|
+                test "triples event" <|
+                    \_ ->
+                        Expect.equal
+                            (Ok
+                                (Map
+                                    [ ( Symbol "cols", Int 4 )
+                                    , ( Symbol "rows", Int 3 )
+                                    , ( Symbol "deckSize", Int 0 )
+                                    , ( Symbol "cards", Map [] )
+                                    , ( Symbol "scores"
+                                      , Map
+                                            [ ( Symbol "match", Int 0 )
+                                            , ( Symbol "matchWrong", Int 0 )
+                                            , ( Symbol "noMatch", Int 0 )
+                                            , ( Symbol "noMatchWrong", Int 0 )
+                                            ]
+                                      )
+                                    ]
+                                )
                             )
-                        )
-                        (Parser.run Parse.value """{:cols 4 :rows 3 :matchSize 3 :deckSize 0 :cards{}:scores{"Rob"{:match 0 :matchWrong 0 :noMatch 0 :noMatchWrong 0}}}
+                            (Parser.run Parse.value """{:cols 4 :rows 3 :matchSize 3 :deckSize 0 :cards{}:scores{"Rob"{:match 0 :matchWrong 0 :noMatch 0 :noMatchWrong 0}}}
 """)
+            ]
+        , describe "module experiment"
+            [ test "parses a list of words" <|
+                \_ ->
+                    Expect.equal
+                        (Ok [ "Aa", "Bbcd", "Efds" ])
+                        (Parser.run Parse.words "Aa Bbcd Efds")
+            , test "parses a list of cameled words" <|
+                \_ ->
+                    Expect.equal
+                        (Ok [ "who", "Aa", "is", "Bbcd", "Efds" ])
+                        (Parser.run Parse.words "whoAa  is BbcdEfds")
             ]
         ]
