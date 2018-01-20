@@ -16,8 +16,8 @@ import String
 import Types exposing (..)
 
 
-seqRest : String -> Parser (List Value)
-seqRest end =
+seq : String -> String -> Parser (List Value)
+seq start end =
     let
         rest items =
             oneOf
@@ -30,7 +30,8 @@ seqRest end =
                     |. symbol end
                 ]
     in
-    space
+    symbol start
+        |- space
         |- oneOf
             [ lazy (\_ -> value) |> andThen (\v -> rest [ v ])
             , succeed [] |. symbol end
@@ -42,19 +43,21 @@ seqRest end =
 value : Parser Value
 value =
     let
-        listRest =
-            succeed List |= seqRest ")"
+        list =
+            succeed List |= seq "(" ")"
     in
-    oneOf
-        [ nil
-        , integer
-        , bool
-        , symbol "\"" |- stringRest
-        , symbol "(" |- listRest
-        , symbol "[" |- vectorRest
-        , symbol "{" |- mapRest
-        , symbol "#{" |- setRest
-        ]
+    lazy <|
+        \_ ->
+            oneOf
+                [ nil
+                , integer
+                , bool
+                , string
+                , list
+                , vector
+                , mapp
+                , set
+                ]
 
 
 {-| Parse an EDN nil value
@@ -117,8 +120,8 @@ bool =
 
 {-| Parses an EDN string
 -}
-stringRest : Parser Value
-stringRest =
+string : Parser Value
+string =
     let
         esc c =
             case c of
@@ -143,6 +146,7 @@ stringRest =
                 ]
     in
     succeed (String << String.concat)
+        |. symbol "\""
         |= repeat zeroOrMore part
         |. symbol "\""
 
@@ -181,11 +185,11 @@ char =
             ]
 
 
-vectorRest =
-    succeed Vector |= seqRest "]"
+vector =
+    succeed Vector |= seq "[" "]"
 
 
-mapRest =
+mapp =
     let
         split xs =
             case xs of
@@ -198,7 +202,7 @@ mapRest =
                 _ ->
                     Nothing
     in
-    seqRest "}"
+    seq "{" "}"
         |> andThen
             (\xs ->
                 case split xs of
@@ -210,8 +214,8 @@ mapRest =
             )
 
 
-setRest =
-    succeed Set |= seqRest "}"
+set =
+    succeed Set |= seq "#{" "}"
 
 
 (|-) p q =
