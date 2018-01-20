@@ -42,10 +42,6 @@ seq start end =
 -}
 value : Parser Value
 value =
-    let
-        list =
-            succeed List |= seq "(" ")"
-    in
     lazy <|
         \_ ->
             oneOf
@@ -53,10 +49,12 @@ value =
                 , integer
                 , bool
                 , string
-                , list
+                , succeed List |= seq "(" ")"
                 , vector
                 , mapp
                 , set
+                , ednSymbol
+                , ednKeyword
                 ]
 
 
@@ -219,17 +217,74 @@ set =
 
 
 (|-) p q =
-    succeed identity |. p |= q
+    p |> andThen (\_ -> q)
+
+
+
+--    succeed identity |. p |= q
+
+
+class s c =
+    String.any ((==) c) s
+
+
+(|||) p q c =
+    p c || q c
+
+
+plainSymbol : Parser String
+plainSymbol =
+    -- ignoring the / issue for now
+    let
+        alpha =
+            Char.isUpper ||| Char.isLower
+
+        num =
+            Char.isDigit
+
+        alphanum =
+            alpha ||| num
+
+        nosecondnum =
+            class "-+."
+
+        notfirst =
+            class ":#"
+
+        other =
+            class "*!_?$%&=<>"
+    in
+    oneOf
+        [ succeed (++)
+            |= keep (Exactly 1) (alpha ||| other)
+            |= keep zeroOrMore (alphanum ||| notfirst ||| other)
+        , succeed (++)
+            |= keep (Exactly 1) nosecondnum
+            |= oneOf
+                [ succeed (++)
+                    |= keep (Exactly 1) (alpha ||| notfirst ||| other)
+                    |= keep zeroOrMore (alphanum ||| notfirst ||| other)
+                , succeed ""
+                ]
+        ]
+
+
+ednSymbol : Parser Value
+ednSymbol =
+    succeed Symbol |= plainSymbol
+
+
+ednKeyword : Parser Value
+ednKeyword =
+    succeed Keyword
+        |. symbol ":"
+        |= plainSymbol
 
 
 
 {-
-   | Symbol String
    | Keyword String
    | Float Float
    | BigFloat Float
-   | Set (List Value)
-   | Map (List (Value, Value))
    | Tagged String Value
-
 -}
