@@ -1,18 +1,11 @@
-module Parse
-    exposing
-        ( bigInteger
-        , bool
-        , integer
-        , string
-        , value
-        )
+module Parse exposing (value)
 
 {-| Parsing EDN
 
 
 # Basic parsers
 
-@docs integer, bigInteger
+@docs value
 
 -}
 
@@ -21,6 +14,46 @@ import List
 import Parser exposing (..)
 import String
 import Types exposing (..)
+
+
+seqRest end =
+    let
+        rest items =
+            oneOf
+                [ spaceSep
+                    |- oneOf
+                        [ lazy (\_ -> value) |> andThen (\v -> rest (v :: items))
+                        , succeed (List.reverse items) |. symbol end
+                        ]
+                , succeed (List.reverse items)
+                    |. symbol end
+                ]
+    in
+    space
+        |- oneOf
+            [ lazy (\_ -> value) |> andThen (\v -> rest [ v ])
+            , succeed [] |. symbol end
+            ]
+
+
+{-| Parse an EDN value
+-}
+value : Parser Value
+value =
+    let
+        listRest =
+            succeed List |= seqRest ")"
+    in
+    oneOf
+        [ nil
+        , integer
+        , bool
+        , symbol "\"" |- stringRest
+        , symbol "(" |- listRest
+        , symbol "[" |- vectorRest
+        , symbol "{" |- mapRest
+        , symbol "#{" |- setRest
+        ]
 
 
 {-| Parse an EDN nil value
@@ -83,8 +116,8 @@ bool =
 
 {-| Parses an EDN string
 -}
-string : Parser Value
-string =
+stringRest : Parser Value
+stringRest =
     let
         esc c =
             case c of
@@ -109,7 +142,6 @@ string =
                 ]
     in
     succeed (String << String.concat)
-        |. symbol "\""
         |= repeat zeroOrMore part
         |. symbol "\""
 
@@ -148,32 +180,41 @@ char =
             ]
 
 
-list : Parser Value
-list =
-    succeed List
-        |. symbol "("
-        |. space
-        |= oneOf
-            [ succeed (::)
-                |= lazy (\_ -> value)
-                |= repeat zeroOrMore
-                    (succeed identity |. spaceSep |= lazy (\_ -> value))
-                |. symbol ")"
-            , succeed [] |. symbol ")"
-            ]
+vectorRest =
+    succeed Vector |= seqRest "]"
 
 
-{-| Parse an EDN value
--}
-value : Parser Value
-value =
-    oneOf
-        [ nil
-        , integer
-        , bool
-        , string
-        , list
-        ]
+mapRest =
+    let
+        split xs =
+            case xs of
+                [] ->
+                    Just []
+
+                k :: v :: ys ->
+                    Maybe.map ((::) ( k, v )) (split ys)
+
+                _ ->
+                    Nothing
+    in
+    seqRest "}"
+        |> andThen
+            (\xs ->
+                case split xs of
+                    Nothing ->
+                        fail "expected an even number of map elements"
+
+                    Just ps ->
+                        succeed (Map ps)
+            )
+
+
+setRest =
+    succeed Set |= seqRest "}"
+
+
+(|-) p q =
+    succeed identity |. p |= q
 
 
 
@@ -183,7 +224,6 @@ value =
    | Float Float
    | BigFloat Float
    | Set (List Value)
-   | Vector (List Value)
    | Map (List (Value, Value))
    | Tagged String Value
 

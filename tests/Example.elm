@@ -5,7 +5,7 @@ import Fuzz exposing (Fuzzer, int, list, string)
 import Parse
 import Parser
 import Test exposing (..)
-import Types
+import Types exposing (..)
 
 
 suite : Test
@@ -15,22 +15,67 @@ suite =
             [ test "parses a known integer" <|
                 \_ ->
                     Expect.equal
-                        (Ok (Types.Int 42))
+                        (Ok (Int 42))
                         (Parser.run Parse.value "42")
             , fuzz int "parses a random integer" <|
                 \i ->
                     Expect.equal
-                        (Ok (Types.Int i))
+                        (Ok (Int i))
                         (Parser.run Parse.value (toString i))
             , test "parse a known string" <|
                 \_ ->
                     Expect.equal
-                        (Ok (Types.String "a string\twith\\escape\"'s"))
+                        (Ok (String "a string\twith\\escape\"'s"))
                         (Parser.run Parse.value "\"a string\\twith\\\\escape\\\"'s\"")
             , test "parse a known bool" <|
                 \_ ->
                     Expect.equal
-                        (Ok (Types.Bool True))
+                        (Ok (Bool True))
                         (Parser.run Parse.value "true")
+            , test "parse an empty list" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (List []))
+                        (Parser.run Parse.value "()")
+            , test "parse another empty list" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (List []))
+                        (Parser.run Parse.value "( ,, )")
+            , test "parse a one-element list" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (List [ Nil ]))
+                        (Parser.run Parse.value "(nil)")
+            , test "parse a one-element list with leading space" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (List [ Nil ]))
+                        (Parser.run Parse.value "( nil)")
+            , test "parse a one-element list with trailing space" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (List [ Nil ]))
+                        (Parser.run Parse.value "(nil )")
+            , test "parse a one-element list with spaces" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (List [ Nil ]))
+                        (Parser.run Parse.value "( nil )")
+            , test "parse a straight list of nils" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (List [ Nil, Nil, Nil, Nil ]))
+                        (Parser.run Parse.value "(nil nil nil nil)")
+            , test "parse a spaced list of nils" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (List [ Nil, Nil, Nil, Nil ]))
+                        (Parser.run Parse.value "( , nil,nil   nil,, nil )")
+            , test "parse a simple list" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (List [ Bool False, String "hello, world", Int -15 ]))
+                        (Parser.run Parse.value """(false "hello, world",  -15,)""")
             ]
         ]
