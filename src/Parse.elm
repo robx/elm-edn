@@ -16,13 +16,14 @@ import String
 import Types exposing (..)
 
 
+seqRest : String -> Parser (List Value)
 seqRest end =
     let
         rest items =
             oneOf
                 [ spaceSep
                     |- oneOf
-                        [ lazy (\_ -> value) |> andThen (\v -> rest (v :: items))
+                        [ value |> andThen (\v -> rest (v :: items))
                         , succeed (List.reverse items) |. symbol end
                         ]
                 , succeed (List.reverse items)
