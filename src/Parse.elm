@@ -1,4 +1,4 @@
-module Parse exposing (value, words, words2)
+module Parse exposing (Thing(..), tlist, tword, value, words, words2)
 
 {-| Parsing EDN
 
@@ -16,8 +16,8 @@ import String
 import Types exposing (..)
 
 
-genwords : Parser () -> Parser a -> Parser a -> Parser (List a)
-genwords separator interruptWord noninterruptWord =
+genwords : Parser () -> Parser a -> Parser a -> Parser () -> Parser (List a)
+genwords separator interruptWord noninterruptWord after =
     let
         word =
             oneOf
@@ -33,15 +33,17 @@ genwords separator interruptWord noninterruptWord =
 
         moreWords =
             oneOf
-                [ sepWord |> andThen (\w -> map (\ws -> w :: ws) moreWords)
-                , succeed []
+                [ succeed []
+                    |. after
+                , sepWord |> andThen (\w -> map (\ws -> w :: ws) moreWords)
                 ]
     in
     oneOf
-        [ succeed (::)
+        [ succeed []
+            |. after
+        , succeed (::)
             |= word
             |= moreWords
-        , succeed []
         ]
 
 
@@ -59,7 +61,7 @@ words2 =
         separate =
             ignore oneOrMore (\c -> c == ' ')
     in
-    genwords separate upword lowword
+    genwords separate upword lowword end
 
 
 words : Parser (List String)
