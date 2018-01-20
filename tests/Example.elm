@@ -130,5 +130,15 @@ suite =
                     Expect.equal
                         (Ok [ "who", "Aa", "is", "Bbcd", "Efds" ])
                         (Parser.run Parse.words "whoAa  is BbcdEfds")
+            , test "parses a list of words (2)" <|
+                \_ ->
+                    Expect.equal
+                        (Ok [ "Aa", "Bbcd", "Efds" ])
+                        (Parser.run Parse.words2 "Aa Bbcd Efds")
+            , test "parses a list of cameled words (2)" <|
+                \_ ->
+                    Expect.equal
+                        (Ok [ "who", "Aa", "is", "Bbcd", "Efds" ])
+                        (Parser.run Parse.words2 "whoAa  is BbcdEfds")
             ]
         ]

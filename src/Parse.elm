@@ -1,4 +1,4 @@
-module Parse exposing (value, words)
+module Parse exposing (value, words, words2)
 
 {-| Parsing EDN
 
@@ -14,6 +14,52 @@ import List
 import Parser exposing (..)
 import String
 import Types exposing (..)
+
+
+genwords : Parser () -> Parser a -> Parser a -> Parser (List a)
+genwords separator interruptWord noninterruptWord =
+    let
+        word =
+            oneOf
+                [ interruptWord
+                , noninterruptWord
+                ]
+
+        sepWord =
+            oneOf
+                [ interruptWord
+                , delayedCommit separator word
+                ]
+
+        moreWords =
+            oneOf
+                [ sepWord |> andThen (\w -> map (\ws -> w :: ws) moreWords)
+                , succeed []
+                ]
+    in
+    oneOf
+        [ succeed (::)
+            |= word
+            |= moreWords
+        , succeed []
+        ]
+
+
+words2 : Parser (List String)
+words2 =
+    let
+        upword =
+            succeed (++)
+                |= keep (Exactly 1) Char.isUpper
+                |= keep zeroOrMore Char.isLower
+
+        lowword =
+            keep oneOrMore Char.isLower
+
+        separate =
+            ignore oneOrMore (\c -> c == ' ')
+    in
+    genwords separate upword lowword
 
 
 words : Parser (List String)
