@@ -104,6 +104,27 @@ words =
         ]
 
 
+type Thing
+    = Word
+    | Things (List Thing)
+
+
+tword : Parser Thing
+tword =
+    succeed Word |. symbol "word"
+
+
+tlist : Parser Thing
+tlist =
+    let
+        things =
+            genwords (symbol " ") (lazy |> (\_ -> tlist)) tword (symbol ")")
+    in
+    succeed Things
+        |. symbol "("
+        |= things
+
+
 seq2 : String -> String -> Parser (List Value)
 seq2 start end =
     let

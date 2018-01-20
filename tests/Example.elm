@@ -140,5 +140,20 @@ suite =
                     Expect.equal
                         (Ok [ "who", "Aa", "is", "Bbcd", "Efds" ])
                         (Parser.run Parse.words2 "whoAa  is BbcdEfds")
+            , test "parse empty" <|
+                \_ ->
+                    Expect.equal
+                        (Ok [])
+                        (Parser.run Parse.words2 "")
+            , test "parse tword" <|
+                \_ ->
+                    Expect.equal
+                        (Ok Parse.Word)
+                        (Parser.run Parse.tword "word")
+            , test "parse empty tlist" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (Parse.Things []))
+                        (Parser.run Parse.tlist "()")
             ]
         ]
