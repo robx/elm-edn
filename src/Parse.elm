@@ -2,9 +2,11 @@ module Parse exposing (genwords, value)
 
 {-| Parsing EDN
 
+
 # Helpers
 
 @docs genwords
+
 
 # Basic parsers
 
@@ -18,7 +20,9 @@ import Parser exposing (..)
 import String
 import Types exposing (..)
 
-{-| sequencing helper -}
+
+{-| sequencing helper
+-}
 genwords : Parser () -> Parser a -> Parser a -> Parser () -> Parser (List a)
 genwords sep boundedWord unboundedWord after =
     let
