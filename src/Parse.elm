@@ -2,6 +2,9 @@ module Parse exposing (genwords, value)
 
 {-| Parsing EDN
 
+# Helpers
+
+@docs genwords
 
 # Basic parsers
 
@@ -15,12 +18,12 @@ import Parser exposing (..)
 import String
 import Types exposing (..)
 
-
+{-| sequencing helper -}
 genwords : Parser () -> Parser a -> Parser a -> Parser () -> Parser (List a)
 genwords sep boundedWord unboundedWord after =
     let
         finish =
-            succeed [] |. after
+            [] |* after
 
         anyWord =
             oneOf
@@ -59,9 +62,8 @@ genwords sep boundedWord unboundedWord after =
 
 seq : String -> String -> Parser (List Value)
 seq start end =
-    succeed identity
-        |. symbol start
-        |= genwords
+    symbol start
+        |- genwords
             spaceSep
             boundedValue
             unboundedValue
@@ -89,21 +91,20 @@ value =
 -}
 nil : Parser Value
 nil =
-    succeed Nil |. Parser.symbol "nil"
+    Nil |* Parser.symbol "nil"
 
 
 {-| Parse an EDN integer
 -}
 integer : Parser Value
 integer =
-    succeed Int
-        |= oneOf
-            [ succeed ((*) -1)
-                |. symbol "-"
+    Int
+        |$ oneOf
+            [ (*) -1
+                |* symbol "-"
                 |= int
-            , succeed identity
-                |. symbol "+"
-                |= int
+            , symbol "+"
+                |- int
             , int
             ]
 
@@ -112,8 +113,8 @@ integer =
 -}
 bigInteger : Parser Value
 bigInteger =
-    succeed BigInt
-        |= int
+    BigInt
+        |$ int
         |. symbol "N"
 
 
@@ -136,10 +137,10 @@ spaceSep =
 -}
 bool : Parser Value
 bool =
-    succeed Bool
-        |= oneOf
-            [ succeed True |. keyword "true"
-            , succeed False |. keyword "false"
+    Bool
+        |$ oneOf
+            [ True |* keyword "true"
+            , False |* keyword "false"
             ]
 
 
@@ -165,13 +166,13 @@ string =
         part =
             oneOf
                 [ keep oneOrMore (\c -> c /= '\\' && c /= '"')
-                , succeed esc
-                    |. symbol "\\"
+                , esc
+                    |* symbol "\\"
                     |= keep (Exactly 1) (always True)
                 ]
     in
-    succeed (String << String.concat)
-        |. symbol "\""
+    (String << String.concat)
+        |* symbol "\""
         |= repeat zeroOrMore part
         |. symbol "\""
 
@@ -195,27 +196,27 @@ char =
                 _ ->
                     Debug.crash "bad single-char string"
     in
-    succeed Char
-        |. symbol "\\"
+    Char
+        |* symbol "\\"
         |= oneOf
-            [ succeed '\n' |. keyword "newline"
-            , succeed '\x0D' |. keyword "return"
-            , succeed ' ' |. keyword "space"
-            , succeed '\t' |. keyword "tab"
-            , succeed unicodeChar
-                |. symbol "u"
+            [ '\n' |* keyword "newline"
+            , '\x0D' |* keyword "return"
+            , ' ' |* keyword "space"
+            , '\t' |* keyword "tab"
+            , unicodeChar
+                |* symbol "u"
                 |= keep (Exactly 4) Char.isHexDigit
-            , succeed stringToChar
-                |= keep (Exactly 1) (always True)
+            , stringToChar
+                |$ keep (Exactly 1) (always True)
             ]
 
 
 list =
-    succeed List |= seq "(" ")"
+    List |$ seq "(" ")"
 
 
 vector =
-    succeed Vector |= seq "[" "]"
+    Vector |$ seq "[" "]"
 
 
 mapp =
@@ -244,15 +245,19 @@ mapp =
 
 
 set =
-    succeed Set |= seq "#{" "}"
+    Set |$ seq "#{" "}"
+
+
+(|*) f p =
+    succeed f |. p
+
+
+(|$) f q =
+    map f q
 
 
 (|-) p q =
     p |> andThen (\_ -> q)
-
-
-
---    succeed identity |. p |= q
 
 
 class s c =
@@ -286,14 +291,14 @@ plainSymbol =
             class "*!_?$%&=<>"
     in
     oneOf
-        [ succeed (++)
-            |= keep (Exactly 1) (alpha ||| other)
+        [ (++)
+            |$ keep (Exactly 1) (alpha ||| other)
             |= keep zeroOrMore (alphanum ||| notfirst ||| other)
-        , succeed (++)
-            |= keep (Exactly 1) nosecondnum
+        , (++)
+            |$ keep (Exactly 1) nosecondnum
             |= oneOf
-                [ succeed (++)
-                    |= keep (Exactly 1) (alpha ||| notfirst ||| other)
+                [ (++)
+                    |$ keep (Exactly 1) (alpha ||| notfirst ||| other)
                     |= keep zeroOrMore (alphanum ||| notfirst ||| other)
                 , succeed ""
                 ]
@@ -302,19 +307,18 @@ plainSymbol =
 
 ednSymbol : Parser Value
 ednSymbol =
-    succeed Symbol |= plainSymbol
+    Symbol |$ plainSymbol
 
 
 ednKeyword : Parser Value
 ednKeyword =
-    succeed Keyword
-        |. symbol ":"
+    Keyword
+        |* symbol ":"
         |= plainSymbol
 
 
 
 {-
-   | Keyword String
    | Float Float
    | BigFloat Float
    | Tagged String Value
