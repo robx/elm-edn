@@ -62,6 +62,8 @@ suite =
                     , "( , nil,nil   nil,, nil )" => List [ Nil, Nil, Nil, Nil ]
                     , """(false "hello, world",  -15,)"""
                         => List [ Bool False, String "hello, world", Int -15 ]
+                    , "trueorfalse" => Symbol "trueorfalse"
+                    , "true#_#_#" => Symbol "true#_#_#"
                     ]
                     Parse.element
         , fuzz int "parses a random integer" <|
@@ -104,6 +106,8 @@ suite =
                         => Tagged "tag" (List [])
                     , "(#tag (nil)#tug nil)"
                         => List [ Tagged "tag" (List [ Nil ]), Tagged "tug" Nil ]
+                    , "#my/tag[1,2,3]"
+                        => Tagged "my/tag" (Vector [ Int 1, Int 2, Int 3 ])
                     ]
                     Parse.element
         , test "triples" <|
@@ -130,6 +134,25 @@ suite =
                                     ]
                               )
                             ]
+                    ]
+                    Parse.element
+        , test "discard" <|
+            \_ ->
+                parse
+                    [ "(1 #_ #_ 2 3 4)"
+                        => List [ Int 1, Int 4 ]
+                    , "#_nil nil"
+                        => Nil
+                    , "(#_ #tag 3, xxx)"
+                        => List [ Symbol "xxx" ]
+                    , "(#_ nil)"
+                        => List []
+                    , "(#_nil)"
+                        => List []
+                    , "(#_#my/tag[2,3,4])"
+                        => List []
+                    , "(#_#my/tag[2,3,4]#_nil,true#_,#_false)"
+                        => List [ Symbol "true#_" ]
                     ]
                     Parse.element
         ]

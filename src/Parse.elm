@@ -20,26 +20,41 @@ seq : String -> String -> Parser (List Element)
 seq open close =
     identity
         |* symbol open
+        |. space
         |= elements
         |. symbol close
 
 
 discard : Parser ()
 discard =
-    symbol "#_" |. (lazy <| \_ -> element)
+    symbol "#_" |. space |. (lazy <| \_ -> element)
+
+
+discardOrElement : Parser (Maybe Element)
+discardOrElement =
+    lazy <|
+        \_ ->
+            oneOf
+                [ Nothing |* discard
+                , Just |$ element
+                ]
 
 
 elements : Parser (List Element)
 elements =
-    identity
-        |* space
-        |= repeat zeroOrMore (lazy <| \_ -> oneOf [ discard |- element, element ] |. space)
+    List.filterMap identity
+        |$ repeat zeroOrMore (lazy (\_ -> discardOrElement) |. space)
 
 
 {-| Parse an EDN element
 -}
 element : Parser Element
 element =
+    lazy <| \_ -> oneOf [ identity |* discard |. space |= element, realElement ]
+
+
+realElement : Parser Element
+realElement =
     lazy <|
         \_ ->
             oneOf
@@ -47,11 +62,9 @@ element =
                 , vector
                 , mapp
                 , set
-                , nil
                 , integer
-                , bool
                 , string
-                , ednSymbol
+                , symbols
                 , ednKeyword
                 , tagged
                 ]
@@ -72,13 +85,6 @@ sep =
                 , end
                 ]
         ]
-
-
-{-| Parse an EDN nil value
--}
-nil : Parser Element
-nil =
-    Nil |* Parser.symbol "nil" |. sep
 
 
 {-| Parse an EDN integer
@@ -120,18 +126,6 @@ space =
 spaceSep : Parser ()
 spaceSep =
     Parser.ignore Parser.oneOrMore isSpace
-
-
-{-| Parse an EDN bool
--}
-bool : Parser Element
-bool =
-    Bool
-        |$ oneOf
-            [ True |* keyword "true"
-            , False |* keyword "false"
-            ]
-        |. sep
 
 
 {-| Parses an EDN string
@@ -298,9 +292,26 @@ plainSymbol =
         |. sep
 
 
-ednSymbol : Parser Element
-ednSymbol =
-    Symbol |$ plainSymbol
+{-| symbols parses EDN symbols and true/false/nil
+-}
+symbols : Parser Element
+symbols =
+    let
+        f s =
+            case s of
+                "true" ->
+                    Bool True
+
+                "false" ->
+                    Bool False
+
+                "nil" ->
+                    Nil
+
+                _ ->
+                    Symbol s
+    in
+    f |$ plainSymbol
 
 
 ednKeyword : Parser Element
