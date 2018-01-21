@@ -153,6 +153,10 @@ suite =
                         => List []
                     , "(#_#my/tag[2,3,4]#_nil,true#_,#_false)"
                         => List [ Symbol "true#_" ]
+                    , "#_ #zap #_ xyz foo bar"
+                        => Symbol "bar"
+                    , "#_ #foo #foo #foo #_#_bar baz zip quux"
+                        => Symbol "quux"
                     ]
                     Parse.element
         ]
