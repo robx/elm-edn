@@ -109,16 +109,21 @@ suite =
                     [ """{:cols 4 :rows 3 :matchSize 3 :deckSize 0 :cards{}:scores{"Rob"{:match 0 :matchWrong 0 :noMatch 0 :noMatchWrong 0}}}
 """
                         => Map
-                            [ ( Symbol "cols", Int 4 )
-                            , ( Symbol "rows", Int 3 )
-                            , ( Symbol "deckSize", Int 0 )
-                            , ( Symbol "cards", Map [] )
-                            , ( Symbol "scores"
+                            [ ( Keyword "cols", Int 4 )
+                            , ( Keyword "rows", Int 3 )
+                            , ( Keyword "matchSize", Int 3 )
+                            , ( Keyword "deckSize", Int 0 )
+                            , ( Keyword "cards", Map [] )
+                            , ( Keyword "scores"
                               , Map
-                                    [ ( Symbol "match", Int 0 )
-                                    , ( Symbol "matchWrong", Int 0 )
-                                    , ( Symbol "noMatch", Int 0 )
-                                    , ( Symbol "noMatchWrong", Int 0 )
+                                    [ ( String "Rob"
+                                      , Map
+                                            [ ( Keyword "match", Int 0 )
+                                            , ( Keyword "matchWrong", Int 0 )
+                                            , ( Keyword "noMatch", Int 0 )
+                                            , ( Keyword "noMatchWrong", Int 0 )
+                                            ]
+                                      )
                                     ]
                               )
                             ]

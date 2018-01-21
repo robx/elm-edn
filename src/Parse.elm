@@ -55,8 +55,8 @@ genwords sep boundedWord unboundedWord after =
     words
 
 
-seq2 : String -> String -> Parser (List Value)
-seq2 start end =
+seq : String -> String -> Parser (List Value)
+seq start end =
     succeed identity
         |. symbol start
         |. space
@@ -64,11 +64,11 @@ seq2 start end =
             spaceSep
             boundedValue
             unboundedValue
-            (symbol end)
+            (delayedCommit space <| symbol end)
 
 
-seq : String -> String -> Parser (List Value)
-seq start end =
+seq2 : String -> String -> Parser (List Value)
+seq2 start end =
     let
         rest items =
             oneOf
