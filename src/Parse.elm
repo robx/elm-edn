@@ -17,34 +17,42 @@ import Types exposing (..)
 
 
 genwords : Parser () -> Parser a -> Parser a -> Parser () -> Parser (List a)
-genwords separator interruptWord noninterruptWord after =
+genwords sep boundedWord unboundedWord after =
     let
-        word =
+        finish =
+            succeed [] |. after
+
+        anyWord =
             oneOf
-                [ interruptWord
-                , noninterruptWord
+                [ boundedWord
+                , unboundedWord
                 ]
 
-        sepWord =
+        oneAndThenMore w ws =
+            w |> andThen (\x -> map (\xs -> x :: xs) ws)
+
+        boundedAndMore =
+            oneAndThenMore boundedWord (lazy (\_ -> words))
+
+        unboundedAndMore =
+            oneAndThenMore unboundedWord (lazy (\_ -> moreWords))
+
+        words =
             oneOf
-                [ interruptWord
-                , delayedCommit separator word
+                [ finish
+                , lazy (\_ -> boundedAndMore)
+                , lazy (\_ -> unboundedAndMore)
                 ]
 
         moreWords =
             oneOf
-                [ succeed []
-                    |. after
-                , sepWord |> andThen (\w -> map (\ws -> w :: ws) moreWords)
+                [ finish
+                , lazy (\_ -> boundedAndMore)
+                , delayedCommit sep <|
+                    oneOf [ lazy (\_ -> boundedAndMore), lazy (\_ -> unboundedAndMore) ]
                 ]
     in
-    oneOf
-        [ succeed []
-            |. after
-        , succeed (::)
-            |= word
-            |= moreWords
-        ]
+    words
 
 
 words2 : Parser (List String)
@@ -117,12 +125,12 @@ tword =
 tlist : Parser Thing
 tlist =
     let
-        things =
-            genwords (symbol " ") (lazy |> (\_ -> tlist)) tword (symbol ")")
+        things f =
+            genwords (symbol " ") tlist tword (symbol ")")
     in
-    succeed Things
-        |. symbol "("
-        |= things
+    symbol "("
+        |> andThen
+            (\_ -> map Things (genwords (symbol " ") tlist tword (symbol ")")))
 
 
 seq2 : String -> String -> Parser (List Value)

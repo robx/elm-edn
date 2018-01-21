@@ -155,5 +155,35 @@ suite =
                     Expect.equal
                         (Ok (Parse.Things []))
                         (Parser.run Parse.tlist "()")
+            , test "parse non-empty tlist" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (Parse.Things [ Parse.Word, Parse.Word, Parse.Word ]))
+                        (Parser.run Parse.tlist "(word word word)")
+            , test "parse nested tlist" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (Parse.Things [ Parse.Word, Parse.Things [ Parse.Word ] ]))
+                        (Parser.run Parse.tlist "(word (word))")
+            , test "parse nested tlist, v2" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (Parse.Things [ Parse.Things [] ]))
+                        (Parser.run Parse.tlist "(())")
+            , test "parse nested tlist, v3" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (Parse.Things [ Parse.Things [], Parse.Things [] ]))
+                        (Parser.run Parse.tlist "(()())")
+            , test "parse nested tlist, v4" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (Parse.Things [ Parse.Things [], Parse.Things [], Parse.Word, Parse.Things [ Parse.Word ] ]))
+                        (Parser.run Parse.tlist "(()word)")
+            , test "parse nested tlist, v5" <|
+                \_ ->
+                    Expect.equal
+                        (Ok (Parse.Things [ Parse.Things [], Parse.Things [], Parse.Word, Parse.Things [ Parse.Word ] ]))
+                        (Parser.run Parse.tlist "(()()word (word))")
             ]
         ]
