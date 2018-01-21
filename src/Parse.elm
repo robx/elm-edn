@@ -1,11 +1,11 @@
-module Parse exposing (value)
+module Parse exposing (element)
 
 {-| Parsing EDN
 
 
 # Basic parsers
 
-@docs value
+@docs element
 
 -}
 
@@ -16,19 +16,30 @@ import String
 import Types exposing (..)
 
 
-seq : String -> String -> Parser (List Value)
+seq : String -> String -> Parser (List Element)
 seq open close =
     identity
         |* symbol open
-        |. space
-        |= repeat zeroOrMore (value |. space)
+        |= elements
         |. symbol close
 
 
-{-| Parse an EDN value
+discard : Parser ()
+discard =
+    symbol "#_" |. (lazy <| \_ -> element)
+
+
+elements : Parser (List Element)
+elements =
+    identity
+        |* space
+        |= repeat zeroOrMore (lazy <| \_ -> oneOf [ discard |- element, element ] |. space)
+
+
+{-| Parse an EDN element
 -}
-value : Parser Value
-value =
+element : Parser Element
+element =
     lazy <|
         \_ ->
             oneOf
@@ -65,14 +76,14 @@ sep =
 
 {-| Parse an EDN nil value
 -}
-nil : Parser Value
+nil : Parser Element
 nil =
     Nil |* Parser.symbol "nil" |. sep
 
 
 {-| Parse an EDN integer
 -}
-integer : Parser Value
+integer : Parser Element
 integer =
     Int
         |$ oneOf
@@ -88,7 +99,7 @@ integer =
 
 {-| Parse an EDN arbitrary precision integer
 -}
-bigInteger : Parser Value
+bigInteger : Parser Element
 bigInteger =
     BigInt
         |$ int
@@ -113,7 +124,7 @@ spaceSep =
 
 {-| Parse an EDN bool
 -}
-bool : Parser Value
+bool : Parser Element
 bool =
     Bool
         |$ oneOf
@@ -125,7 +136,7 @@ bool =
 
 {-| Parses an EDN string
 -}
-string : Parser Value
+string : Parser Element
 string =
     let
         esc c =
@@ -165,7 +176,7 @@ unicodeChar u =
     Debug.crash "not implemented"
 
 
-char : Parser Value
+char : Parser Element
 char =
     let
         stringToChar s =
@@ -287,29 +298,28 @@ plainSymbol =
         |. sep
 
 
-ednSymbol : Parser Value
+ednSymbol : Parser Element
 ednSymbol =
     Symbol |$ plainSymbol
 
 
-ednKeyword : Parser Value
+ednKeyword : Parser Element
 ednKeyword =
     Keyword
         |* symbol ":"
         |= plainSymbol
 
 
-tagged : Parser Value
+tagged : Parser Element
 tagged =
     Tagged
         |* symbol "#"
         |= plainSymbol
-        |= value
+        |= element
 
 
 
 {-
    | Float Float
    | BigFloat Float
-   | Tagged String Value
 -}

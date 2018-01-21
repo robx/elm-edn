@@ -2,14 +2,14 @@ module Types exposing (..)
 
 {-| EDN Types
 
-@docs Value
+@docs Element
 
 -}
 
 
-{-| Arbitrary raw EDN values
+{-| An EDN element
 -}
-type Value
+type Element
     = Nil
     | Bool Bool
     | String String
@@ -20,8 +20,8 @@ type Value
     | BigInt Int
     | Float Float
     | BigFloat Float
-    | Set (List Value)
-    | List (List Value)
-    | Vector (List Value)
-    | Map (List ( Value, Value ))
-    | Tagged String Value
+    | Set (List Element)
+    | List (List Element)
+    | Vector (List Element)
+    | Map (List ( Element, Element ))
+    | Tagged String Element

@@ -2,15 +2,15 @@ module Decode
     exposing
         ( Decoder
         , bool
+        , decodeElement
         , decodeString
-        , decodeValue
+        , element
         , keyword
         , list
         , string
-        , value
         )
 
-{-| Value decoders
+{-| Element decoders
 
 
 # Primitives
@@ -29,12 +29,12 @@ module Decode
 # Run Decoders
 
 @docs decodeString
-@docs decodeValue
+@docs decodeElement
 
 
 # Fancy Decoding
 
-@docs value
+@docs element
 
 -}
 
@@ -43,40 +43,40 @@ import Parser
 import Types exposing (..)
 
 
-{-| A value that knows how to decode EDN values.
+{-| A value that knows how to decode EDN elements.
 -}
 type alias Decoder a =
-    Value -> Result String a
+    Element -> Result String a
 
 
-{-| Parse the given string into a JSON value and then run the Decoder on it.
+{-| Parse the given string into an EDN element and then run the Decoder on it.
 -}
 decodeString : Decoder a -> String -> Result String a
 decodeString d s =
-    Parser.run Parse.value s
+    Parser.run Parse.element s
         |> Result.mapError toString
         |> Result.andThen d
 
 
-{-| Run a Decoder on some JSON Value.
+{-| Run a Decoder on some JSON Element.
 -}
-decodeValue : Decoder a -> Value -> Result String a
-decodeValue =
+decodeElement : Decoder a -> Element -> Result String a
+decodeElement =
     identity
 
 
-{-| Do not do anything with an EDN value, just bring it into Elm as a Value.
+{-| Do not do anything with an EDN element, just bring it into Elm as a Element.
 -}
-value : Decoder Value
-value =
+element : Decoder Element
+element =
     Ok
 
 
 {-| Decode an EDN string into an Elm string.
 -}
 string : Decoder String
-string v =
-    case v of
+string e =
+    case e of
         String s ->
             Ok s
 
@@ -87,8 +87,8 @@ string v =
 {-| Decode an EDN keyword into an Elm string.
 -}
 keyword : Decoder String
-keyword v =
-    case v of
+keyword e =
+    case e of
         Keyword s ->
             Ok s
 
@@ -99,8 +99,8 @@ keyword v =
 {-| Decode an EDN boolean into an Elm Bool.
 -}
 bool : Decoder Bool
-bool v =
-    case v of
+bool e =
+    case e of
         Bool b ->
             Ok b
 
@@ -111,17 +111,17 @@ bool v =
 {-| Decode an EDN list into an Elm List.
 -}
 list : Decoder a -> Decoder (List a)
-list d v =
+list d e =
     let
         listHelp l =
             case l of
                 [] ->
                     Ok []
 
-                w :: ws ->
-                    (::) <$> decodeValue d w <*> listHelp ws
+                f :: fs ->
+                    (::) <$> decodeElement d f <*> listHelp fs
     in
-    case v of
+    case e of
         List l ->
             listHelp l
 
@@ -130,13 +130,13 @@ list d v =
 
 
 tagged : (String -> Decoder a) -> Decoder a
-tagged lookup v =
-    case v of
-        Tagged t w ->
-            lookup t w
+tagged lookup e =
+    case e of
+        Tagged t f ->
+            lookup t f
 
         _ ->
-            Err "not a tagged value"
+            Err "not a tagged element"
 
 
 (<$>) : (a -> b) -> Result err a -> Result err b

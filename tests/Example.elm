@@ -27,7 +27,7 @@ nestedList =
                     [ "()" => List []
                     , "(nil nil nil)" => List [ Nil, Nil, Nil ]
                     ]
-                    Parse.value
+                    Parse.element
         , test "nested list" <|
             \_ ->
                 parse
@@ -37,7 +37,7 @@ nestedList =
                     , "(()nil)" => List [ List [], Nil ]
                     , "(()()nil (nil))" => List [ List [], List [], Nil, List [ Nil ] ]
                     ]
-                    Parse.value
+                    Parse.element
         ]
 
 
@@ -63,12 +63,12 @@ suite =
                     , """(false "hello, world",  -15,)"""
                         => List [ Bool False, String "hello, world", Int -15 ]
                     ]
-                    Parse.value
+                    Parse.element
         , fuzz int "parses a random integer" <|
             \i ->
                 Expect.equal
                     (Ok (Int i))
-                    (Parser.run Parse.value (toString i))
+                    (Parser.run Parse.element (toString i))
         , test "nesting things" <|
             \_ ->
                 parse
@@ -90,7 +90,7 @@ suite =
                             ]
                     , "({}{}{})" => List [ Map [], Map [], Map [] ]
                     ]
-                    Parse.value
+                    Parse.element
         , test "tags" <|
             \_ ->
                 parse
@@ -105,7 +105,7 @@ suite =
                     , "(#tag (nil)#tug nil)"
                         => List [ Tagged "tag" (List [ Nil ]), Tagged "tug" Nil ]
                     ]
-                    Parse.value
+                    Parse.element
         , test "triples" <|
             \_ ->
                 parse
@@ -131,5 +131,5 @@ suite =
                               )
                             ]
                     ]
-                    Parse.value
+                    Parse.element
         ]
