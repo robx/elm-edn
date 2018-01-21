@@ -38,11 +38,13 @@ genwords sep boundedWord unboundedWord after =
             oneAndThenMore unboundedWord (lazy (\_ -> moreWords))
 
         words =
-            oneOf
-                [ finish
-                , lazy (\_ -> boundedAndMore)
-                , lazy (\_ -> unboundedAndMore)
-                ]
+            space
+                |- oneOf
+                    [ finish
+                    , oneOf [ lazy (\_ -> boundedAndMore), lazy (\_ -> unboundedAndMore) ]
+                    , delayedCommit sep <|
+                        oneOf [ lazy (\_ -> boundedAndMore), lazy (\_ -> unboundedAndMore) ]
+                    ]
 
         moreWords =
             oneOf
@@ -59,7 +61,6 @@ seq : String -> String -> Parser (List Value)
 seq start end =
     succeed identity
         |. symbol start
-        |. space
         |= genwords
             spaceSep
             boundedValue
