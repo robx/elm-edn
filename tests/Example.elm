@@ -25,29 +25,41 @@ tlist =
             (\_ -> Parser.map Ts (Parse.genwords (Parser.symbol " ") tlist tword (Parser.symbol ")")))
 
 
-parse exp p s =
-    Expect.equal exp (Parser.run p s)
+
+--parse exp p s =
+--    Expect.equal exp (Parser.run p s)
+
+
+parse : List ( String, a ) -> Parser.Parser a -> Expectation
+parse cs =
+    Expect.all <|
+        List.map (\( s, x ) p -> Expect.equal (Ok x) (Parser.run p s)) cs
+
+
+(=>) a b =
+    ( a, b )
 
 
 nestedList : Test
 nestedList =
     describe "nested list parsing"
-        [ test "parse a word" <|
-            \_ -> parse (Ok W) tword "word"
-        , test "parse empty tlist" <|
-            \_ -> parse (Ok <| Ts []) tlist "()"
-        , test "parse non-empty tlist" <|
-            \_ -> parse (Ok <| Ts [ W, W, W ]) tlist "(word word word)"
-        , test "parse nested tlist" <|
-            \_ -> parse (Ok <| Ts [ W, Ts [ W ] ]) tlist "(word (word))"
-        , test "parse nested tlist, v2" <|
-            \_ -> parse (Ok <| Ts [ Ts [] ]) tlist "(())"
-        , test "parse nested tlist, v3" <|
-            \_ -> parse (Ok <| Ts [ Ts [], Ts [] ]) tlist "(()())"
-        , test "parse nested tlist, v4" <|
-            \_ -> parse (Ok <| Ts [ Ts [], W ]) tlist "(()word)"
-        , test "parse nested tlist, v5" <|
-            \_ -> parse (Ok <| Ts [ Ts [], Ts [], W, Ts [ W ] ]) tlist "(()()word (word))"
+        [ test "basic tlist" <|
+            \_ ->
+                parse
+                    [ "()" => Ts []
+                    , "(word word word)" => Ts [ W, W, W ]
+                    ]
+                    tlist
+        , test "nested tlist" <|
+            \_ ->
+                parse
+                    [ "(word (word))" => Ts [ W, Ts [ W ] ]
+                    , "(())" => Ts [ Ts [] ]
+                    , "(()())" => Ts [ Ts [], Ts [] ]
+                    , "(()word)" => Ts [ Ts [], W ]
+                    , "(()()word (word))" => Ts [ Ts [], Ts [], W, Ts [ W ] ]
+                    ]
+                    tlist
         ]
 
 
