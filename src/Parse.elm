@@ -57,39 +57,14 @@ genwords sep boundedWord unboundedWord after =
 
 seq2 : String -> String -> Parser (List Value)
 seq2 start end =
-    let
-        sepValue : Parser Value
-        sepValue =
-            oneOf
-                [ succeed List |= seq2 "(" ")"
-                , vector
-                , mapp
-                , set
-                , delayedCommit spaceSep value
-                ]
-
-        moreValues : Parser (List Value)
-        moreValues =
-            oneOf
-                [ sepValue |> andThen (\v -> map (\vs -> v :: vs) moreValues)
-                , succeed []
-                ]
-
-        values : Parser (List Value)
-        values =
-            oneOf
-                [ succeed (::)
-                    |= value
-                    |= moreValues
-                , succeed []
-                ]
-    in
     succeed identity
         |. symbol start
         |. space
-        |= values
-        |. space
-        |. symbol end
+        |= genwords
+            spaceSep
+            boundedValue
+            unboundedValue
+            (symbol end)
 
 
 seq : String -> String -> Parser (List Value)
@@ -114,24 +89,21 @@ seq start end =
             ]
 
 
+boundedValue =
+    lazy <| \_ -> oneOf [ list, vector, mapp, set ]
+
+
+unboundedValue =
+    lazy <| \_ -> oneOf [ nil, integer, bool, string, ednSymbol, ednKeyword ]
+
+
 {-| Parse an EDN value
 -}
 value : Parser Value
 value =
     lazy <|
         \_ ->
-            oneOf
-                [ nil
-                , integer
-                , bool
-                , string
-                , succeed List |= seq "(" ")"
-                , vector
-                , mapp
-                , set
-                , ednSymbol
-                , ednKeyword
-                ]
+            oneOf [ boundedValue, unboundedValue ]
 
 
 {-| Parse an EDN nil value
@@ -257,6 +229,10 @@ char =
             , succeed stringToChar
                 |= keep (Exactly 1) (always True)
             ]
+
+
+list =
+    succeed List |= seq "(" ")"
 
 
 vector =
