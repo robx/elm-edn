@@ -67,28 +67,6 @@ seq start end =
             (delayedCommit space <| symbol end)
 
 
-seq2 : String -> String -> Parser (List Value)
-seq2 start end =
-    let
-        rest items =
-            oneOf
-                [ spaceSep
-                    |- oneOf
-                        [ value |> andThen (\v -> rest (v :: items))
-                        , succeed (List.reverse items) |. symbol end
-                        ]
-                , succeed (List.reverse items)
-                    |. symbol end
-                ]
-    in
-    symbol start
-        |- space
-        |- oneOf
-            [ lazy (\_ -> value) |> andThen (\v -> rest [ v ])
-            , succeed [] |. symbol end
-            ]
-
-
 boundedValue =
     lazy <| \_ -> oneOf [ list, vector, mapp, set ]
 

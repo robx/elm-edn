@@ -94,7 +94,17 @@ suite =
         , test "nesting things" <|
             \_ ->
                 parse
-                    [ """[ (1, "yo"), nil, {(true) "who", nil -3} ]"""
+                    [ "[()nil]"
+                        => Vector [ List [], Nil ]
+                    , "(() ())"
+                        => List [ List [], List [] ]
+                    , "(() nil)"
+                        => List [ List [], Nil ]
+                    , "[() nil]"
+                        => Vector [ List [], Nil ]
+                    , "[ (), nil ]"
+                        => Vector [ List [], Nil ]
+                    , """[ (1, "yo"), nil, {(true) "who", nil -3} ]"""
                         => Vector
                             [ List [ Int 1, String "yo" ]
                             , Nil
