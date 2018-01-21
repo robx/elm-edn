@@ -1,4 +1,4 @@
-module Parse exposing (Thing(..), tlist, tword, value, words, words2)
+module Parse exposing (genwords, value)
 
 {-| Parsing EDN
 
@@ -53,84 +53,6 @@ genwords sep boundedWord unboundedWord after =
                 ]
     in
     words
-
-
-words2 : Parser (List String)
-words2 =
-    let
-        upword =
-            succeed (++)
-                |= keep (Exactly 1) Char.isUpper
-                |= keep zeroOrMore Char.isLower
-
-        lowword =
-            keep oneOrMore Char.isLower
-
-        separate =
-            ignore oneOrMore (\c -> c == ' ')
-    in
-    genwords separate upword lowword end
-
-
-words : Parser (List String)
-words =
-    let
-        upword =
-            succeed (++)
-                |= keep (Exactly 1) Char.isUpper
-                |= keep zeroOrMore Char.isLower
-
-        lowword =
-            keep oneOrMore Char.isLower
-
-        word =
-            oneOf
-                [ upword
-                , lowword
-                ]
-
-        sepWord =
-            oneOf
-                [ upword
-                , delayedCommit separate word
-                ]
-
-        separate =
-            ignore oneOrMore (\c -> c == ' ')
-
-        moreWords =
-            oneOf
-                [ sepWord |> andThen (\w -> map (\ws -> w :: ws) moreWords)
-                , succeed []
-                ]
-    in
-    oneOf
-        [ succeed (::)
-            |= word
-            |= moreWords
-        , succeed []
-        ]
-
-
-type Thing
-    = Word
-    | Things (List Thing)
-
-
-tword : Parser Thing
-tword =
-    succeed Word |. symbol "word"
-
-
-tlist : Parser Thing
-tlist =
-    let
-        things f =
-            genwords (symbol " ") tlist tword (symbol ")")
-    in
-    symbol "("
-        |> andThen
-            (\_ -> map Things (genwords (symbol " ") tlist tword (symbol ")")))
 
 
 seq2 : String -> String -> Parser (List Value)

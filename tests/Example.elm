@@ -3,15 +3,59 @@ module Example exposing (..)
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Parse
-import Parser
+import Parser exposing ((|.))
 import Test exposing (..)
 import Types exposing (..)
+
+
+type T
+    = W
+    | Ts (List T)
+
+
+tword : Parser.Parser T
+tword =
+    Parser.succeed W |. Parser.symbol "word"
+
+
+tlist : Parser.Parser T
+tlist =
+    Parser.symbol "("
+        |> Parser.andThen
+            (\_ -> Parser.map Ts (Parse.genwords (Parser.symbol " ") tlist tword (Parser.symbol ")")))
+
+
+parse exp p s =
+    Expect.equal exp (Parser.run p s)
+
+
+nestedList : Test
+nestedList =
+    describe "nested list parsing"
+        [ test "parse a word" <|
+            \_ -> parse (Ok W) tword "word"
+        , test "parse empty tlist" <|
+            \_ -> parse (Ok <| Ts []) tlist "()"
+        , test "parse non-empty tlist" <|
+            \_ -> parse (Ok <| Ts [ W, W, W ]) tlist "(word word word)"
+        , test "parse nested tlist" <|
+            \_ -> parse (Ok <| Ts [ W, Ts [ W ] ]) tlist "(word (word))"
+        , test "parse nested tlist, v2" <|
+            \_ -> parse (Ok <| Ts [ Ts [] ]) tlist "(())"
+        , test "parse nested tlist, v3" <|
+            \_ -> parse (Ok <| Ts [ Ts [], Ts [] ]) tlist "(()())"
+        , test "parse nested tlist, v4" <|
+            \_ -> parse (Ok <| Ts [ Ts [], W ]) tlist "(()word)"
+        , test "parse nested tlist, v5" <|
+            \_ -> parse (Ok <| Ts [ Ts [], Ts [], W, Ts [ W ] ]) tlist "(()()word (word))"
+        ]
 
 
 suite : Test
 suite =
     describe "module Parsers"
-        [ describe "basic parsers"
+        [ nestedList
+        , describe "basic parsers"
             [ test "parses a known integer" <|
                 \_ ->
                     Expect.equal
@@ -118,72 +162,5 @@ suite =
                             )
                             (Parser.run Parse.value """{:cols 4 :rows 3 :matchSize 3 :deckSize 0 :cards{}:scores{"Rob"{:match 0 :matchWrong 0 :noMatch 0 :noMatchWrong 0}}}
 """)
-            ]
-        , describe "module experiment"
-            [ test "parses a list of words" <|
-                \_ ->
-                    Expect.equal
-                        (Ok [ "Aa", "Bbcd", "Efds" ])
-                        (Parser.run Parse.words "Aa Bbcd Efds")
-            , test "parses a list of cameled words" <|
-                \_ ->
-                    Expect.equal
-                        (Ok [ "who", "Aa", "is", "Bbcd", "Efds" ])
-                        (Parser.run Parse.words "whoAa  is BbcdEfds")
-            , test "parses a list of words (2)" <|
-                \_ ->
-                    Expect.equal
-                        (Ok [ "Aa", "Bbcd", "Efds" ])
-                        (Parser.run Parse.words2 "Aa Bbcd Efds")
-            , test "parses a list of cameled words (2)" <|
-                \_ ->
-                    Expect.equal
-                        (Ok [ "who", "Aa", "is", "Bbcd", "Efds" ])
-                        (Parser.run Parse.words2 "whoAa  is BbcdEfds")
-            , test "parse empty" <|
-                \_ ->
-                    Expect.equal
-                        (Ok [])
-                        (Parser.run Parse.words2 "")
-            , test "parse tword" <|
-                \_ ->
-                    Expect.equal
-                        (Ok Parse.Word)
-                        (Parser.run Parse.tword "word")
-            , test "parse empty tlist" <|
-                \_ ->
-                    Expect.equal
-                        (Ok (Parse.Things []))
-                        (Parser.run Parse.tlist "()")
-            , test "parse non-empty tlist" <|
-                \_ ->
-                    Expect.equal
-                        (Ok (Parse.Things [ Parse.Word, Parse.Word, Parse.Word ]))
-                        (Parser.run Parse.tlist "(word word word)")
-            , test "parse nested tlist" <|
-                \_ ->
-                    Expect.equal
-                        (Ok (Parse.Things [ Parse.Word, Parse.Things [ Parse.Word ] ]))
-                        (Parser.run Parse.tlist "(word (word))")
-            , test "parse nested tlist, v2" <|
-                \_ ->
-                    Expect.equal
-                        (Ok (Parse.Things [ Parse.Things [] ]))
-                        (Parser.run Parse.tlist "(())")
-            , test "parse nested tlist, v3" <|
-                \_ ->
-                    Expect.equal
-                        (Ok (Parse.Things [ Parse.Things [], Parse.Things [] ]))
-                        (Parser.run Parse.tlist "(()())")
-            , test "parse nested tlist, v4" <|
-                \_ ->
-                    Expect.equal
-                        (Ok (Parse.Things [ Parse.Things [], Parse.Things [], Parse.Word, Parse.Things [ Parse.Word ] ]))
-                        (Parser.run Parse.tlist "(()word)")
-            , test "parse nested tlist, v5" <|
-                \_ ->
-                    Expect.equal
-                        (Ok (Parse.Things [ Parse.Things [], Parse.Things [], Parse.Word, Parse.Things [ Parse.Word ] ]))
-                        (Parser.run Parse.tlist "(()()word (word))")
             ]
         ]
