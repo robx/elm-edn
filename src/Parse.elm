@@ -1,11 +1,6 @@
-module Parse exposing (genwords, value)
+module Parse exposing (value)
 
 {-| Parsing EDN
-
-
-# Helpers
-
-@docs genwords
 
 
 # Basic parsers
@@ -21,65 +16,13 @@ import String
 import Types exposing (..)
 
 
-{-| sequencing helper
--}
-genwords : Parser () -> Parser a -> Parser a -> Parser () -> Parser (List a)
-genwords sep boundedWord unboundedWord after =
-    let
-        finish =
-            [] |* after
-
-        anyWord =
-            oneOf
-                [ boundedWord
-                , unboundedWord
-                ]
-
-        oneAndThenMore w ws =
-            w |> andThen (\x -> map (\xs -> x :: xs) ws)
-
-        boundedAndMore =
-            oneAndThenMore boundedWord (lazy (\_ -> words))
-
-        unboundedAndMore =
-            oneAndThenMore unboundedWord (lazy (\_ -> moreWords))
-
-        words =
-            space
-                |- oneOf
-                    [ finish
-                    , oneOf [ lazy (\_ -> boundedAndMore), lazy (\_ -> unboundedAndMore) ]
-                    , delayedCommit sep <|
-                        oneOf [ lazy (\_ -> boundedAndMore), lazy (\_ -> unboundedAndMore) ]
-                    ]
-
-        moreWords =
-            oneOf
-                [ finish
-                , lazy (\_ -> boundedAndMore)
-                , delayedCommit sep <|
-                    oneOf [ lazy (\_ -> boundedAndMore), lazy (\_ -> unboundedAndMore) ]
-                ]
-    in
-    words
-
-
 seq : String -> String -> Parser (List Value)
-seq start end =
-    symbol start
-        |- genwords
-            spaceSep
-            boundedValue
-            unboundedValue
-            (delayedCommit space <| symbol end)
-
-
-boundedValue =
-    lazy <| \_ -> oneOf [ list, vector, mapp, set ]
-
-
-unboundedValue =
-    lazy <| \_ -> oneOf [ nil, integer, bool, string, ednSymbol, ednKeyword ]
+seq open close =
+    identity
+        |* symbol open
+        |. space
+        |= repeat zeroOrMore (value |. space)
+        |. symbol close
 
 
 {-| Parse an EDN value
@@ -88,14 +31,43 @@ value : Parser Value
 value =
     lazy <|
         \_ ->
-            oneOf [ boundedValue, unboundedValue ]
+            oneOf
+                [ list
+                , vector
+                , mapp
+                , set
+                , nil
+                , integer
+                , bool
+                , string
+                , ednSymbol
+                , ednKeyword
+                , tagged
+                ]
+
+
+sep : Parser ()
+sep =
+    oneOf
+        [ spaceSep
+        , Parser.lookAhead <|
+            oneOf
+                [ symbol "("
+                , symbol "["
+                , symbol "{"
+                , symbol ")"
+                , symbol "]"
+                , symbol "}"
+                , end
+                ]
+        ]
 
 
 {-| Parse an EDN nil value
 -}
 nil : Parser Value
 nil =
-    Nil |* Parser.symbol "nil"
+    Nil |* Parser.symbol "nil" |. sep
 
 
 {-| Parse an EDN integer
@@ -111,6 +83,7 @@ integer =
                 |- int
             , int
             ]
+        |. sep
 
 
 {-| Parse an EDN arbitrary precision integer
@@ -120,6 +93,7 @@ bigInteger =
     BigInt
         |$ int
         |. symbol "N"
+        |. sep
 
 
 isSpace : Char -> Bool
@@ -146,6 +120,7 @@ bool =
             [ True |* keyword "true"
             , False |* keyword "false"
             ]
+        |. sep
 
 
 {-| Parses an EDN string
@@ -179,6 +154,7 @@ string =
         |* symbol "\""
         |= repeat zeroOrMore part
         |. symbol "\""
+        |. sep
 
 
 {-| unicodeChar translates a four character hexadecimal string
@@ -213,6 +189,7 @@ char =
             , stringToChar
                 |$ keep (Exactly 1) (always True)
             ]
+        |. sep
 
 
 list =
@@ -292,7 +269,7 @@ plainSymbol =
             class ":#"
 
         other =
-            class "*!_?$%&=<>"
+            class "*!_?$%&=<>/"
     in
     oneOf
         [ (++)
@@ -307,6 +284,7 @@ plainSymbol =
                 , succeed ""
                 ]
         ]
+        |. sep
 
 
 ednSymbol : Parser Value
@@ -319,6 +297,14 @@ ednKeyword =
     Keyword
         |* symbol ":"
         |= plainSymbol
+
+
+tagged : Parser Value
+tagged =
+    Tagged
+        |* symbol "#"
+        |= plainSymbol
+        |= value
 
 
 

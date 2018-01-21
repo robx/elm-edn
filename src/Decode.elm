@@ -42,7 +42,9 @@ import Parse
 import Parser
 import Types exposing (..)
 
-{-| A value that knows how to decode EDN values. -}
+
+{-| A value that knows how to decode EDN values.
+-}
 type alias Decoder a =
     Value -> Result String a
 
@@ -66,7 +68,8 @@ decodeValue =
 {-| Do not do anything with an EDN value, just bring it into Elm as a Value.
 -}
 value : Decoder Value
-value = Ok
+value =
+    Ok
 
 
 {-| Decode an EDN string into an Elm string.
@@ -129,8 +132,11 @@ list d v =
 tagged : (String -> Decoder a) -> Decoder a
 tagged lookup v =
     case v of
-        Tagged t w -> lookup t w
-        _ -> Err "not a tagged value"
+        Tagged t w ->
+            lookup t w
+
+        _ ->
+            Err "not a tagged value"
 
 
 (<$>) : (a -> b) -> Result err a -> Result err b

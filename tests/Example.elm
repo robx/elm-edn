@@ -8,28 +8,6 @@ import Test exposing (..)
 import Types exposing (..)
 
 
-type T
-    = W
-    | Ts (List T)
-
-
-tword : Parser.Parser T
-tword =
-    Parser.succeed W |. Parser.symbol "word"
-
-
-tlist : Parser.Parser T
-tlist =
-    Parser.symbol "("
-        |> Parser.andThen
-            (\_ -> Parser.map Ts (Parse.genwords (Parser.symbol " ") tlist tword (Parser.symbol ")")))
-
-
-
---parse exp p s =
---    Expect.equal exp (Parser.run p s)
-
-
 parse : List ( String, a ) -> Parser.Parser a -> Expectation
 parse cs =
     Expect.all <|
@@ -43,23 +21,23 @@ parse cs =
 nestedList : Test
 nestedList =
     describe "nested list parsing"
-        [ test "basic tlist" <|
+        [ test "basic list" <|
             \_ ->
                 parse
-                    [ "()" => Ts []
-                    , "(word word word)" => Ts [ W, W, W ]
+                    [ "()" => List []
+                    , "(nil nil nil)" => List [ Nil, Nil, Nil ]
                     ]
-                    tlist
-        , test "nested tlist" <|
+                    Parse.value
+        , test "nested list" <|
             \_ ->
                 parse
-                    [ "(word (word))" => Ts [ W, Ts [ W ] ]
-                    , "(())" => Ts [ Ts [] ]
-                    , "(()())" => Ts [ Ts [], Ts [] ]
-                    , "(()word)" => Ts [ Ts [], W ]
-                    , "(()()word (word))" => Ts [ Ts [], Ts [], W, Ts [ W ] ]
+                    [ "(nil (nil))" => List [ Nil, List [ Nil ] ]
+                    , "(())" => List [ List [] ]
+                    , "(()())" => List [ List [], List [] ]
+                    , "(()nil)" => List [ List [], Nil ]
+                    , "(()()nil (nil))" => List [ List [], List [], Nil, List [ Nil ] ]
                     ]
-                    tlist
+                    Parse.value
         ]
 
 
@@ -125,7 +103,7 @@ suite =
                     , "#tag ()"
                         => Tagged "tag" (List [])
                     , "(#tag (nil)#tug nil)"
-                        => List [ Tagged "tag" (List [Nil]), Tagged "tug" Nil ]
+                        => List [ Tagged "tag" (List [ Nil ]), Tagged "tug" Nil ]
                     ]
                     Parse.value
         , test "triples" <|
