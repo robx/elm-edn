@@ -126,6 +126,13 @@ list d v =
             Err "not a list"
 
 
+tagged : (String -> Decoder a) -> Decoder a
+tagged lookup v =
+    case v of
+        Tagged t w -> lookup t w
+        _ -> Err "not a tagged value"
+
+
 (<$>) : (a -> b) -> Result err a -> Result err b
 (<$>) =
     Result.map

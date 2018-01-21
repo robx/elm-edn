@@ -113,6 +113,21 @@ suite =
                     , "({}{}{})" => List [ Map [], Map [], Map [] ]
                     ]
                     Parse.value
+        , test "tags" <|
+            \_ ->
+                parse
+                    [ "#type nil"
+                        => Tagged "type" Nil
+                    , "#myapp/type nil"
+                        => Tagged "myapp/type" Nil
+                    , "#tag()"
+                        => Tagged "tag" (List [])
+                    , "#tag ()"
+                        => Tagged "tag" (List [])
+                    , "(#tag (nil)#tug nil)"
+                        => List [ Tagged "tag" (List [Nil]), Tagged "tug" Nil ]
+                    ]
+                    Parse.value
         , test "triples" <|
             \_ ->
                 parse
