@@ -144,6 +144,59 @@ element =
     Ok
 
 
+wrongType : Element -> Element -> Result String a
+wrongType want have =
+    let
+        desc el =
+            case el of
+                String _ ->
+                    "a string"
+
+                Int _ ->
+                    "an integer"
+
+                Nil ->
+                    "`nil`"
+
+                Symbol _ ->
+                    "a symbol"
+
+                Keyword _ ->
+                    "a keyword"
+
+                Tagged _ _ ->
+                    "a tagged element"
+
+                List _ ->
+                    "a list"
+
+                Set _ ->
+                    "a set"
+
+                Map _ _ ->
+                    "a map"
+
+                Float _ ->
+                    "a floating point number"
+
+                BigInt _ ->
+                    "a big integer"
+
+                BigFloat _ ->
+                    "a big floating point number"
+
+                Bool _ ->
+                    "a boolean"
+
+                Char _ ->
+                    "a character"
+
+                Vector _ ->
+                    "a vector"
+    in
+    Err <| "expected " ++ desc want ++ " but found " ++ desc have
+
+
 {-| Decode an EDN string into an Elm String.
 -}
 string : Decoder String
@@ -153,7 +206,7 @@ string e =
             Ok s
 
         _ ->
-            Err ("not a string: " ++ toString e)
+            wrongType (String "") e
 
 
 {-| Decode an EDN integer into an Elm Int.
@@ -165,7 +218,7 @@ int e =
             Ok x
 
         _ ->
-            Err "not an integer"
+            wrongType (Int 0) e
 
 
 {-| Decode an EDN keyword into an Elm String.
@@ -177,7 +230,7 @@ keyword e =
             Ok s
 
         _ ->
-            Err "not a keyword"
+            wrongType (Keyword "") e
 
 
 {-| Decode an EDN boolean into an Elm Bool.
@@ -189,7 +242,7 @@ bool e =
             Ok b
 
         _ ->
-            Err "not a bool"
+            wrongType (Bool False) e
 
 
 {-| Decode an EDN list into an Elm List.
@@ -210,7 +263,7 @@ list d e =
             listHelp l
 
         _ ->
-            Err "not a list"
+            wrongType (List []) e
 
 
 assocList : Decoder key -> Decoder value -> Decoder (List ( key, value ))
@@ -234,7 +287,7 @@ assocList key value e =
             rec (merge keyed unkeyed)
 
         _ ->
-            Err "not a map"
+            wrongType (Map Dict.empty []) e
 
 
 {-| Decode an EDN map into an Elm Dict.
@@ -256,7 +309,7 @@ object e =
             Err <| "non-keyword keys in map: " ++ toString unkeyed
 
         _ ->
-            Err "expected a map"
+            wrongType (Map Dict.empty []) e
 
 
 {-| Decode an EDN map field.
@@ -289,7 +342,7 @@ tagged decoders e =
                     Err <| "unknown tag: " ++ t
 
         _ ->
-            Err "not a tagged element"
+            wrongType (Tagged "" Nil) e
 
 
 (<$>) : (a -> b) -> Result err a -> Result err b
