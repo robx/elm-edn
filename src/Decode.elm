@@ -7,6 +7,7 @@ module Decode
         , decodeString
         , dict
         , element
+        , fail
         , field
         , int
         , keyword
@@ -18,6 +19,7 @@ module Decode
         , map5
         , map6
         , string
+        , succeed
         , tagged
         )
 
@@ -47,7 +49,7 @@ module Decode
 
 # Fancy Decoding
 
-@docs andThen, element
+@docs andThen, succeed, fail, element
 
 -}
 
@@ -121,6 +123,18 @@ map6 f d1 d2 d3 d4 d5 d6 =
 andThen : (a -> Decoder b) -> Decoder a -> Decoder b
 andThen f p e =
     p e |> Result.andThen (\x -> f x e)
+
+
+{-| -}
+succeed : a -> Decoder a
+succeed x =
+    always (Ok x)
+
+
+{-| -}
+fail : String -> Decoder a
+fail err =
+    always (Err err)
 
 
 {-| Do not do anything with an EDN element, just bring it into Elm as a Element.
