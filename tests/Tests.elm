@@ -24,9 +24,9 @@ parse cs =
     ( a, b )
 
 
-nestedList : Test
-nestedList =
-    describe "nested list parsing"
+suite : Test
+suite =
+    describe "module Parsers"
         [ test "basic list" <|
             \_ ->
                 parse
@@ -44,13 +44,6 @@ nestedList =
                     , "(()()nil (nil))" => List [ List [], List [], Nil, List [ Nil ] ]
                     ]
                     Parse.element
-        ]
-
-
-suite : Test
-suite =
-    describe "module Parsers"
-        [ nestedList
         , test "basic parsers" <|
             \_ ->
                 parse
@@ -201,4 +194,17 @@ suite =
                         => Symbol "quux"
                     ]
                     Parse.element
+        , test "looooooong list" <|
+            -- seems to scale linearly, ran up to 100k
+            let
+                longList =
+                    "(" ++ String.repeat 10000 "()" ++ ")"
+            in
+            \_ ->
+                case Parser.run Parse.element longList of
+                    Ok _ ->
+                        Expect.pass
+
+                    Err err ->
+                        Expect.fail (toString err)
         ]
