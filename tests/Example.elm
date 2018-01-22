@@ -134,6 +134,8 @@ suite =
                                     ]
                               )
                             ]
+                    , """{:name"Rob"}"""
+                        => Map [ ( Keyword "name", String "Rob" ) ]
                     ]
                     Parse.element
         , test "discard" <|

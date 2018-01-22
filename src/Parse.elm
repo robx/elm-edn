@@ -82,6 +82,7 @@ sep =
                 , symbol ")"
                 , symbol "]"
                 , symbol "}"
+                , symbol "\""
                 , end
                 ]
         ]
