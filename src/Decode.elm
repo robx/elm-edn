@@ -12,6 +12,7 @@ module Decode
         , int
         , keyword
         , list
+        , vector
         , map
         , map2
         , map3
@@ -34,7 +35,7 @@ module Decode
 
 # Data Structures
 
-@docs field, list, dict, tagged
+@docs field, list, vector, dict, tagged
 
 
 # Run Decoders
@@ -244,26 +245,37 @@ bool e =
         _ ->
             wrongType (Bool False) e
 
+seq : Decoder a -> List Element -> Result String (List a)
+seq d l =
+       case l of
+           f :: fs ->
+                Result.map2 (::) (d f) (seq d fs)
+
+           [] ->
+                Ok []
 
 {-| Decode an EDN list into an Elm List.
 -}
 list : Decoder a -> Decoder (List a)
 list d e =
-    let
-        listHelp l =
-            case l of
-                [] ->
-                    Ok []
-
-                f :: fs ->
-                    (::) <$> decodeElement d f <*> listHelp fs
-    in
     case e of
         List l ->
-            listHelp l
+            seq d l
 
         _ ->
             wrongType (List []) e
+
+
+{-| Decode an EDN vector into an Elm List.
+-}
+vector : Decoder a -> Decoder (List a)
+vector d e =
+    case e of
+        Vector v ->
+            seq d v
+
+        _ ->
+            wrongType (Vector []) e
 
 
 assocList : Decoder key -> Decoder value -> Decoder (List ( key, value ))
