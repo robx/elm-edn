@@ -5,8 +5,11 @@ module Decode
         , decodeElement
         , decodeString
         , element
+        , field
+        , int
         , keyword
         , list
+        , map
         , string
         )
 
@@ -16,20 +19,22 @@ module Decode
 # Primitives
 
 @docs Decoder
-@docs string
-@docs keyword
-@docs bool
+@docs string, keyword, bool, int
 
 
 # Data Structures
 
-@docs list
+@docs field, list
 
 
 # Run Decoders
 
-@docs decodeString
-@docs decodeElement
+@docs decodeString, decodeElement
+
+
+# Mapping
+
+@docs map
 
 
 # Fancy Decoding
@@ -38,6 +43,7 @@ module Decode
 
 -}
 
+import Dict
 import Parse
 import Parser
 import Types exposing (..)
@@ -65,6 +71,18 @@ decodeElement =
     identity
 
 
+{-| Transform a decoder.
+-}
+map : (a -> value) -> Decoder a -> Decoder value
+map f d =
+    Result.map f << d
+
+
+andThen : (a -> Decoder b) -> Decoder a -> Decoder b
+andThen f p e =
+    p e |> Result.andThen (\x -> f x e)
+
+
 {-| Do not do anything with an EDN element, just bring it into Elm as a Element.
 -}
 element : Decoder Element
@@ -72,7 +90,7 @@ element =
     Ok
 
 
-{-| Decode an EDN string into an Elm string.
+{-| Decode an EDN string into an Elm String.
 -}
 string : Decoder String
 string e =
@@ -84,7 +102,19 @@ string e =
             Err "not a string"
 
 
-{-| Decode an EDN keyword into an Elm string.
+{-| Decode an EDN integer into an Elm Int.
+-}
+int : Decoder Int
+int e =
+    case e of
+        Int x ->
+            Ok x
+
+        _ ->
+            Err "not an integer"
+
+
+{-| Decode an EDN keyword into an Elm String.
 -}
 keyword : Decoder String
 keyword e =
@@ -127,6 +157,56 @@ list d e =
 
         _ ->
             Err "not a list"
+
+
+assocList : Decoder key -> Decoder value -> Decoder (List ( key, value ))
+assocList key value e =
+    case e of
+        Map ps ->
+            let
+                rec xs =
+                    case xs of
+                        ( k, v ) :: ys ->
+                            Result.map2 (,) (key k) (value v)
+                                |> Result.andThen (\x -> Result.map ((::) x) (rec ys))
+
+                        [] ->
+                            Ok []
+            in
+            rec ps
+
+        _ ->
+            Err "not a map"
+
+
+{-| Decode an EDN map into an Elm Dict.
+-}
+dict : Decoder comparable -> Decoder value -> Decoder (Dict.Dict comparable value)
+dict key value =
+    map Dict.fromList (assocList key value)
+
+
+{-| Decode an object encoded as a map from keywords to element
+-}
+object : Decoder (Dict.Dict String Element)
+object =
+    dict keyword element
+
+
+{-| Decode an EDN map field.
+-}
+field : String -> Decoder a -> Decoder a
+field f d =
+    map (Dict.get f) object
+        |> andThen
+            (\maybeElement _ ->
+                case maybeElement of
+                    Just e ->
+                        d e
+
+                    Nothing ->
+                        Err "field not found"
+            )
 
 
 tagged : (String -> Decoder a) -> Decoder a
