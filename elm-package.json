@@ -10,6 +10,7 @@
     ],
     "exposed-modules": [
         "Decode",
+        "Encode",
         "Parse",
         "Types"
     ],
