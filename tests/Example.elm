@@ -1,11 +1,17 @@
 module Example exposing (..)
 
+import Dict
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Parse
 import Parser exposing ((|.))
 import Test exposing (..)
 import Types exposing (..)
+
+
+toMap : List ( Element, Element ) -> Element
+toMap l =
+    Map Dict.empty l
 
 
 parse : List ( String, a ) -> Parser.Parser a -> Expectation
@@ -88,9 +94,9 @@ suite =
                         => Vector
                             [ List [ Int 1, String "yo" ]
                             , Nil
-                            , Map [ ( List [ Bool True ], String "who" ), ( Nil, Int -3 ) ]
+                            , toMap [ ( List [ Bool True ], String "who" ), ( Nil, Int -3 ) ]
                             ]
-                    , "({}{}{})" => List [ Map [], Map [], Map [] ]
+                    , "({}{}{})" => List [ toMap [], toMap [], toMap [] ]
                     ]
                     Parse.element
         , test "tags" <|
@@ -116,26 +122,32 @@ suite =
                     [ """{:cols 4 :rows 3 :matchSize 3 :deckSize 0 :cards{}:scores{"Rob"{:match 0 :matchWrong 0 :noMatch 0 :noMatchWrong 0}}}
 """
                         => Map
-                            [ ( Keyword "cols", Int 4 )
-                            , ( Keyword "rows", Int 3 )
-                            , ( Keyword "matchSize", Int 3 )
-                            , ( Keyword "deckSize", Int 0 )
-                            , ( Keyword "cards", Map [] )
-                            , ( Keyword "scores"
-                              , Map
-                                    [ ( String "Rob"
-                                      , Map
-                                            [ ( Keyword "match", Int 0 )
-                                            , ( Keyword "matchWrong", Int 0 )
-                                            , ( Keyword "noMatch", Int 0 )
-                                            , ( Keyword "noMatchWrong", Int 0 )
-                                            ]
-                                      )
-                                    ]
-                              )
-                            ]
+                            (Dict.fromList
+                                [ ( "cols", Int 4 )
+                                , ( "rows", Int 3 )
+                                , ( "matchSize", Int 3 )
+                                , ( "deckSize", Int 0 )
+                                , ( "cards", toMap [] )
+                                , ( "scores"
+                                  , toMap
+                                        [ ( String "Rob"
+                                          , Map
+                                                (Dict.fromList
+                                                    [ ( "match", Int 0 )
+                                                    , ( "matchWrong", Int 0 )
+                                                    , ( "noMatch", Int 0 )
+                                                    , ( "noMatchWrong", Int 0 )
+                                                    ]
+                                                )
+                                                []
+                                          )
+                                        ]
+                                  )
+                                ]
+                            )
+                            []
                     , """{:name"Rob"}"""
-                        => Map [ ( Keyword "name", String "Rob" ) ]
+                        => Map (Dict.fromList [ ( "name", String "Rob" ) ]) []
                     ]
                     Parse.element
         , test "discard" <|

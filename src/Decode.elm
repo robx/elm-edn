@@ -8,7 +8,6 @@ module Decode
         , dict
         , element
         , field
-        , fields
         , int
         , keyword
         , list
@@ -33,7 +32,7 @@ module Decode
 
 # Data Structures
 
-@docs field, fields, list, dict, tagged
+@docs field, list, dict, tagged
 
 
 # Run Decoders
@@ -118,6 +117,7 @@ map6 f d1 d2 d3 d4 d5 d6 =
         |> andThen (\g -> map g d6)
 
 
+{-| -}
 andThen : (a -> Decoder b) -> Decoder a -> Decoder b
 andThen f p e =
     p e |> Result.andThen (\x -> f x e)
@@ -201,8 +201,12 @@ list d e =
 
 assocList : Decoder key -> Decoder value -> Decoder (List ( key, value ))
 assocList key value e =
+    let
+        merge keyed unkeyed =
+            (Dict.toList keyed |> List.map (\( k, v ) -> ( Keyword k, v ))) ++ unkeyed
+    in
     case e of
-        Map ps ->
+        Map keyed unkeyed ->
             let
                 rec xs =
                     case xs of
@@ -213,7 +217,7 @@ assocList key value e =
                         [] ->
                             Ok []
             in
-            rec ps
+            rec (merge keyed unkeyed)
 
         _ ->
             Err "not a map"
@@ -229,8 +233,16 @@ dict key value =
 {-| Decode an object encoded as a map from keywords to element
 -}
 object : Decoder (Dict.Dict String Element)
-object =
-    dict keyword element
+object e =
+    case e of
+        Map keyed [] ->
+            Ok keyed
+
+        Map _ unkeyed ->
+            Err <| "non-keyword keys in map: " ++ toString unkeyed
+
+        _ ->
+            Err "expected a map"
 
 
 {-| Decode an EDN map field.
@@ -246,22 +258,6 @@ field f d =
 
                     Nothing ->
                         Err ("field not found: " ++ f)
-            )
-
-
-fields : Decoder (String -> Decoder a -> Decoder a)
-fields e =
-    object e
-        |> Result.andThen
-            (\o ->
-                Ok <|
-                    \f d _ ->
-                        case Dict.get f o of
-                            Just el ->
-                                d el
-
-                            Nothing ->
-                                Err ("field not found: " ++ f)
             )
 
 

@@ -6,6 +6,8 @@ module Types exposing (..)
 
 -}
 
+import Dict exposing (Dict)
+
 
 {-| An EDN element
 -}
@@ -23,5 +25,5 @@ type Element
     | Set (List Element)
     | List (List Element)
     | Vector (List Element)
-    | Map (List ( Element, Element ))
+    | Map (Dict String Element) (List ( Element, Element ))
     | Tagged String Element

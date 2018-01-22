@@ -10,6 +10,7 @@ module Parse exposing (element)
 -}
 
 import Char
+import Dict
 import List
 import Parser exposing (..)
 import String
@@ -208,27 +209,24 @@ vector =
 
 mapp =
     let
-        split xs =
-            case xs of
-                [] ->
-                    Just []
+        build keyed unkeyed elements =
+            case elements of
+                key :: value :: rest ->
+                    case key of
+                        Keyword keyword ->
+                            build (Dict.insert keyword value keyed) unkeyed rest
 
-                k :: v :: ys ->
-                    Maybe.map ((::) ( k, v )) (split ys)
+                        _ ->
+                            build keyed (( key, value ) :: unkeyed) rest
+
+                [] ->
+                    succeed <| Map keyed (List.reverse unkeyed)
 
                 _ ->
-                    Nothing
+                    fail "uneven number of map elements"
     in
     seq "{" "}"
-        |> andThen
-            (\xs ->
-                case split xs of
-                    Nothing ->
-                        fail "expected an even number of map elements"
-
-                    Just ps ->
-                        succeed (Map ps)
-            )
+        |> andThen (build Dict.empty [])
 
 
 set =
