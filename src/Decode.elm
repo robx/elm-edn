@@ -4,12 +4,18 @@ module Decode
         , bool
         , decodeElement
         , decodeString
+        , dict
         , element
         , field
         , int
         , keyword
         , list
         , map
+        , map2
+        , map3
+        , map4
+        , map5
+        , map6
         , string
         )
 
@@ -24,7 +30,7 @@ module Decode
 
 # Data Structures
 
-@docs field, list
+@docs field, list, dict
 
 
 # Run Decoders
@@ -34,7 +40,7 @@ module Decode
 
 # Mapping
 
-@docs map
+@docs map, map2, map3, map4, map5, map6
 
 
 # Fancy Decoding
@@ -76,6 +82,37 @@ decodeElement =
 map : (a -> value) -> Decoder a -> Decoder value
 map f d =
     Result.map f << d
+
+
+{-| -}
+map2 : (a -> b -> value) -> Decoder a -> Decoder b -> Decoder value
+map2 f d1 d2 e =
+    Result.map2 f (d1 e) (d2 e)
+
+
+{-| -}
+map3 : (a -> b -> c -> value) -> Decoder a -> Decoder b -> Decoder c -> Decoder value
+map3 f d1 d2 d3 e =
+    Result.map3 f (d1 e) (d2 e) (d3 e)
+
+
+{-| -}
+map4 : (a -> b -> c -> d -> value) -> Decoder a -> Decoder b -> Decoder c -> Decoder d -> Decoder value
+map4 f d1 d2 d3 d4 e =
+    Result.map4 f (d1 e) (d2 e) (d3 e) (d4 e)
+
+
+{-| -}
+map5 : (a -> b -> c -> d -> e -> value) -> Decoder a -> Decoder b -> Decoder c -> Decoder d -> Decoder e -> Decoder value
+map5 f d1 d2 d3 d4 d5 =
+    map4 f d1 d2 d3 d4 |> andThen (\g -> map g d5)
+
+
+{-| -}
+map6 : (a -> b -> c -> d -> e -> f -> value) -> Decoder a -> Decoder b -> Decoder c -> Decoder d -> Decoder e -> Decoder f -> Decoder value
+map6 f d1 d2 d3 d4 d5 d6 =
+    map5 f d1 d2 d3 d4 d5
+        |> andThen (\g -> map g d6)
 
 
 andThen : (a -> Decoder b) -> Decoder a -> Decoder b
@@ -205,7 +242,7 @@ field f d =
                         d e
 
                     Nothing ->
-                        Err "field not found"
+                        Err ("field not found: " ++ f)
             )
 
 
