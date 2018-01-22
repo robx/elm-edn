@@ -12,7 +12,6 @@ module Decode
         , int
         , keyword
         , list
-        , vector
         , map
         , map2
         , map3
@@ -22,6 +21,7 @@ module Decode
         , string
         , succeed
         , tagged
+        , vector
         )
 
 {-| Element decoders
@@ -137,8 +137,10 @@ fail : String -> Decoder a
 fail err =
     always (Err err)
 
+
 context : String -> Decoder a -> Decoder a
-context ctx d = Result.mapError (\e -> "while decoding " ++ ctx ++ ", " ++ e) << d
+context ctx d =
+    Result.mapError (\e -> "while decoding " ++ ctx ++ ", " ++ e) << d
 
 
 {-| Do not do anything with an EDN element, just bring it into Elm as a Element.
@@ -248,14 +250,16 @@ bool e =
         _ ->
             wrongType (Bool False) e
 
+
 seq : Decoder a -> List Element -> Result String (List a)
 seq d l =
-       case l of
-           f :: fs ->
-                Result.map2 (::) (d f) (seq d fs)
+    case l of
+        f :: fs ->
+            Result.map2 (::) (d f) (seq d fs)
 
-           [] ->
-                Ok []
+        [] ->
+            Ok []
+
 
 {-| Decode an EDN list into an Elm List.
 -}
