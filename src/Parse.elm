@@ -161,7 +161,6 @@ string =
         |* symbol "\""
         |= repeat zeroOrMore part
         |. symbol "\""
-        |. sep
 
 
 {-| unicodeChar translates a four character hexadecimal string

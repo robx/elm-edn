@@ -70,6 +70,12 @@ suite =
                         => List [ Bool False, String "hello, world", Int -15 ]
                     , "trueorfalse" => Symbol "trueorfalse"
                     , "true#_#_#" => Symbol "true#_#_#"
+                    , "(yo1)"
+                        => List [ Symbol "yo1" ]
+                    , """("yo"1)"""
+                        => List [ String "yo", Int 1 ]
+                    , """("yo":yo)"""
+                        => List [ String "yo", Keyword "yo" ]
                     ]
                     Parse.element
         , fuzz int "parses a random integer" <|
@@ -148,6 +154,28 @@ suite =
                             []
                     , """{:name"Rob"}"""
                         => Map (Dict.fromList [ ( "name", String "Rob" ) ]) []
+                    , """#triples/eventClaimed{:name"Liz":type"match":result"wrong":score{ :match 0 :matchWrong 1 :noMatch 0 :noMatchWrong 1}}"""
+                        => Tagged "triples/eventClaimed"
+                            (Map
+                                (Dict.fromList
+                                    [ ( "name", String "Liz" )
+                                    , ( "type", String "match" )
+                                    , ( "result", String "wrong" )
+                                    , ( "score"
+                                      , Map
+                                            (Dict.fromList
+                                                [ ( "match", Int 0 )
+                                                , ( "matchWrong", Int 1 )
+                                                , ( "noMatch", Int 0 )
+                                                , ( "noMatchWrong", Int 1 )
+                                                ]
+                                            )
+                                            []
+                                      )
+                                    ]
+                                )
+                                []
+                            )
                     ]
                     Parse.element
         , test "discard" <|
