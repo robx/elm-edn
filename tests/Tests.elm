@@ -1,4 +1,4 @@
-module Example exposing (..)
+module Tests exposing (..)
 
 import Dict
 import Expect exposing (Expectation)
