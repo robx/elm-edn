@@ -1,0 +1,4 @@
+* argument to tagged:
+   String -> Decoder a
+   List (String, Decoder a)
+   Dict String (Decoder a)
