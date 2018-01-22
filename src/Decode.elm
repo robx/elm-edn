@@ -1,12 +1,14 @@
 module Decode
     exposing
         ( Decoder
+        , andThen
         , bool
         , decodeElement
         , decodeString
         , dict
         , element
         , field
+        , fields
         , int
         , keyword
         , list
@@ -17,6 +19,7 @@ module Decode
         , map5
         , map6
         , string
+        , tagged
         )
 
 {-| Element decoders
@@ -30,7 +33,7 @@ module Decode
 
 # Data Structures
 
-@docs field, list, dict
+@docs field, fields, list, dict, tagged
 
 
 # Run Decoders
@@ -45,7 +48,7 @@ module Decode
 
 # Fancy Decoding
 
-@docs element
+@docs andThen, element
 
 -}
 
@@ -136,7 +139,7 @@ string e =
             Ok s
 
         _ ->
-            Err "not a string"
+            Err ("not a string: " ++ toString e)
 
 
 {-| Decode an EDN integer into an Elm Int.
@@ -246,11 +249,34 @@ field f d =
             )
 
 
-tagged : (String -> Decoder a) -> Decoder a
-tagged lookup e =
+fields : Decoder (String -> Decoder a -> Decoder a)
+fields e =
+    object e
+        |> Result.andThen
+            (\o ->
+                Ok <|
+                    \f d _ ->
+                        case Dict.get f o of
+                            Just el ->
+                                d el
+
+                            Nothing ->
+                                Err ("field not found: " ++ f)
+            )
+
+
+{-| Decode an element based on its tag.
+-}
+tagged : List ( String, Decoder a ) -> Decoder a
+tagged decoders e =
     case e of
         Tagged t f ->
-            lookup t f
+            case Dict.get t (Dict.fromList decoders) of
+                Just d ->
+                    d f
+
+                Nothing ->
+                    Err <| "unknown tag: " ++ t
 
         _ ->
             Err "not a tagged element"
