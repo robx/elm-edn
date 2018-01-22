@@ -137,6 +137,9 @@ fail : String -> Decoder a
 fail err =
     always (Err err)
 
+context : String -> Decoder a -> Decoder a
+context ctx d = Result.mapError (\e -> "while decoding " ++ ctx ++ ", " ++ e) << d
+
 
 {-| Do not do anything with an EDN element, just bring it into Elm as a Element.
 -}
@@ -348,7 +351,7 @@ tagged decoders e =
         Tagged t f ->
             case Dict.get t (Dict.fromList decoders) of
                 Just d ->
-                    d f
+                    context ("an element tagged #" ++ t) d <| f
 
                 Nothing ->
                     Err <| "unknown tag: " ++ t
