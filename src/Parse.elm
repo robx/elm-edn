@@ -1,11 +1,11 @@
-module Parse exposing (element)
+module Parse exposing (element, number)
 
 {-| Parsing EDN
 
 
 # Basic parsers
 
-@docs element
+@docs element, number
 
 -}
 
@@ -385,6 +385,7 @@ rawNumber =
         |. sep
 
 
+{-| -}
 number : Parser Element
 number =
     let

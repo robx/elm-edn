@@ -207,4 +207,12 @@ suite =
 
                     Err err ->
                         Expect.fail (toString err)
+        , test "numbers" <|
+            \_ ->
+                parse
+                    [ "1" => Int 1
+                    , "-55" => Int -55
+                    , "1.234E5M" => BigFloat { sign = "+", digits = "1" } "234" { sign = "+", digits = "5" }
+                    ]
+                    Parse.number
         ]
