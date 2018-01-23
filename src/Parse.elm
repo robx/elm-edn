@@ -71,6 +71,7 @@ realElement =
                 , symbols
                 , ednKeyword
                 , tagged
+                , char
                 ]
 
 
