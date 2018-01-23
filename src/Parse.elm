@@ -327,8 +327,113 @@ tagged =
         |= element
 
 
+type alias RawInteger =
+    { sign : String
+    , digits : String
+    }
 
-{-
-   | Float Float
-   | BigFloat Float
--}
+
+type alias RawNumber =
+    { integer : RawInteger
+    , frac : Maybe String
+    , exp : Maybe RawInteger
+    , big : Maybe String
+    }
+
+
+rawNumber : Parser RawNumber
+rawNumber =
+    let
+        sign =
+            oneOf
+                [ keep (Exactly 1) (\c -> c == '+' || c == '-')
+                , succeed "+"
+                ]
+
+        digits =
+            oneOf
+                [ keep (Exactly 1) (\c -> c == '0')
+                , (++)
+                    |$ keep (Exactly 1) (\c -> Char.isDigit c && c /= '0')
+                    |= keep zeroOrMore (\c -> Char.isDigit c)
+                ]
+
+        integer =
+            RawInteger
+                |$ sign
+                |= digits
+
+        frac =
+            symbol "." |- keep zeroOrMore Char.isDigit
+
+        exp =
+            RawInteger
+                |* oneOf [ symbol "e", symbol "E" ]
+                |= sign
+                |= digits
+
+        big =
+            keep (Exactly 1) (\c -> c == 'M' || c == 'N')
+    in
+    RawNumber
+        |$ integer
+        |= oneOf [ map Just frac, succeed Nothing ]
+        |= oneOf [ map Just exp, succeed Nothing ]
+        |= oneOf [ map Just big, succeed Nothing ]
+        |. sep
+
+
+number : Parser Element
+number =
+    let
+        rawToStr raw =
+            raw.sign ++ raw.digits
+
+        rawToInt raw =
+            case String.toInt (rawToStr raw) of
+                Ok v ->
+                    v
+
+                Err err ->
+                    Debug.crash <| "failed to parse integer: " ++ rawToStr raw ++ ": " ++ err
+
+        strToFloat s =
+            case String.toFloat s of
+                Ok v ->
+                    v
+
+                Err err ->
+                    Debug.crash <| "failed to parse float: " ++ s ++ ": " ++ err
+
+        f n =
+            case ( n.frac, n.exp, n.big ) of
+                ( Nothing, Nothing, Nothing ) ->
+                    succeed <| Int <| rawToInt n.integer
+
+                ( Nothing, Nothing, Just "N" ) ->
+                    succeed <| BigInt n.integer
+
+                ( _, _, Nothing ) ->
+                    succeed <|
+                        Float <|
+                            strToFloat <|
+                                String.concat
+                                    [ n.integer.sign
+                                    , n.integer.digits
+                                    , "."
+                                    , Maybe.withDefault "0" n.frac
+                                    , "E"
+                                    , rawToStr (Maybe.withDefault { sign = "+", digits = "0" } n.exp)
+                                    ]
+
+                ( _, _, Just "M" ) ->
+                    succeed <|
+                        BigFloat n.integer
+                            (Maybe.withDefault "0" n.frac)
+                            (Maybe.withDefault { sign = "+", digits = "0" } n.exp)
+
+                _ ->
+                    fail "mix of integer and floating point"
+    in
+    rawNumber
+        |> andThen f

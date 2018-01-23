@@ -188,7 +188,7 @@ wrongType want have =
                 BigInt _ ->
                     "a big integer"
 
-                BigFloat _ ->
+                BigFloat _ _ _ ->
                     "a big floating point number"
 
                 Bool _ ->

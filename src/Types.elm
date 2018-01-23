@@ -19,9 +19,9 @@ type Element
     | Symbol String
     | Keyword String
     | Int Int
-    | BigInt Int
+    | BigInt { sign : String, digits : String }
     | Float Float
-    | BigFloat Float
+    | BigFloat { sign : String, digits : String } String { sign : String, digits : String }
     | Set (List Element)
     | List (List Element)
     | Vector (List Element)
