@@ -217,5 +217,5 @@ suite =
                     , "0" => Int 0
                     , "0N" => BigInt { sign = "+", digits = "0" }
                     ]
-                    Parse.number
+                    Parse.element
         ]

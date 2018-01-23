@@ -1,11 +1,11 @@
-module Parse exposing (element, number)
+module Parse exposing (element)
 
 {-| Parsing EDN
 
 
 # Basic parsers
 
-@docs element, number
+@docs element
 
 -}
 
@@ -66,7 +66,7 @@ realElement =
                 , vector
                 , mapp
                 , set
-                , integer
+                , number
                 , string
                 , symbols
                 , ednKeyword
@@ -195,7 +195,7 @@ char =
 list =
     inContext "list" <|
         List
-            |$ seq "(" ")"
+            |$ (lazy <| \_ -> seq "(" ")")
 
 
 vector =
