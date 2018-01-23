@@ -28,7 +28,10 @@ seq open close =
 
 discard : Parser ()
 discard =
-    symbol "#_" |. space |. (lazy <| \_ -> element)
+    inContext "discard" <|
+        symbol "#_"
+            |. space
+            |. (lazy <| \_ -> element)
 
 
 discardOrElement : Parser (Maybe Element)
@@ -199,11 +202,15 @@ char =
 
 
 list =
-    List |$ seq "(" ")"
+    inContext "list" <|
+        List
+            |$ seq "(" ")"
 
 
 vector =
-    Vector |$ seq "[" "]"
+    inContext "vector" <|
+        Vector
+            |$ seq "[" "]"
 
 
 mapp =
@@ -224,12 +231,16 @@ mapp =
                 _ ->
                     fail "uneven number of map elements"
     in
-    seq "{" "}"
-        |> andThen (build Dict.empty [])
+    inContext "map" <|
+        (seq "{" "}"
+            |> andThen (build Dict.empty [])
+        )
 
 
 set =
-    Set |$ seq "#{" "}"
+    inContext "set" <|
+        Set
+            |$ seq "#{" "}"
 
 
 (|*) f p =
@@ -321,10 +332,11 @@ ednKeyword =
 
 tagged : Parser Element
 tagged =
-    Tagged
-        |* symbol "#"
-        |= plainSymbol
-        |= element
+    inContext "tagged" <|
+        Tagged
+            |* symbol "#"
+            |= plainSymbol
+            |= element
 
 
 type alias RawInteger =
