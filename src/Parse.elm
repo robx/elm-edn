@@ -201,7 +201,7 @@ list =
 vector =
     inContext "vector" <|
         Vector
-            |$ seq "[" "]"
+            |$ (lazy <| \_ -> seq "[" "]")
 
 
 mapp =
@@ -223,7 +223,7 @@ mapp =
                     fail "uneven number of map elements"
     in
     inContext "map" <|
-        (seq "{" "}"
+        ((lazy <| \_ -> seq "{" "}")
             |> andThen (build Dict.empty [])
         )
 
@@ -231,7 +231,7 @@ mapp =
 set =
     inContext "set" <|
         Set
-            |$ seq "#{" "}"
+            |$ (lazy <| \_ -> seq "#{" "}")
 
 
 (|*) f p =
