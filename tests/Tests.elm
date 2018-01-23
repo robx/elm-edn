@@ -213,6 +213,9 @@ suite =
                     [ "1" => Int 1
                     , "-55" => Int -55
                     , "1.234E5M" => BigFloat { sign = "+", digits = "1" } "234" { sign = "+", digits = "5" }
+                    , "0.0" => Float 0
+                    , "0" => Int 0
+                    , "0N" => BigInt { sign = "+", digits = "0" }
                     ]
                     Parse.number
         ]
