@@ -108,16 +108,6 @@ integer =
         |. sep
 
 
-{-| Parse an EDN arbitrary precision integer
--}
-bigInteger : Parser Element
-bigInteger =
-    BigInt
-        |$ int
-        |. symbol "N"
-        |. sep
-
-
 isSpace : Char -> Bool
 isSpace c =
     c == ',' || c == ' ' || c == '\t' || c == '\n' || c == '\x0D'
