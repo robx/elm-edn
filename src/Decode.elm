@@ -9,6 +9,7 @@ module Decode
         , element
         , fail
         , field
+        , float
         , int
         , keyword
         , list
@@ -18,6 +19,8 @@ module Decode
         , map4
         , map5
         , map6
+        , map7
+        , map8
         , string
         , succeed
         , tagged
@@ -118,6 +121,20 @@ map6 : (a -> b -> c -> d -> e -> f -> value) -> Decoder a -> Decoder b -> Decode
 map6 f d1 d2 d3 d4 d5 d6 =
     map5 f d1 d2 d3 d4 d5
         |> andThen (\g -> map g d6)
+
+
+{-| -}
+map7 : (a -> b -> c -> d -> e -> f -> g -> value) -> Decoder a -> Decoder b -> Decoder c -> Decoder d -> Decoder e -> Decoder f -> Decoder g -> Decoder value
+map7 f d1 d2 d3 d4 d5 d6 d7 =
+    map6 f d1 d2 d3 d4 d5 d6
+        |> andThen (\g -> map g d7)
+
+
+{-| -}
+map8 : (a -> b -> c -> d -> e -> f -> g -> h -> value) -> Decoder a -> Decoder b -> Decoder c -> Decoder d -> Decoder e -> Decoder f -> Decoder g -> Decoder h -> Decoder value
+map8 f d1 d2 d3 d4 d5 d6 d7 d8 =
+    map7 f d1 d2 d3 d4 d5 d6 d7
+        |> andThen (\g -> map g d8)
 
 
 {-| -}
@@ -225,6 +242,17 @@ int e =
 
         _ ->
             wrongType (Int 0) e
+
+
+{-| -}
+float : Decoder Float
+float e =
+    case e of
+        Float x ->
+            Ok x
+
+        _ ->
+            wrongType (Float 0) e
 
 
 {-| Decode an EDN keyword into an Elm String.
