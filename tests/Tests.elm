@@ -228,6 +228,9 @@ suite =
                         => List [ Symbol "let", Symbol "us", Symbol "try", Symbol "something", Symbol "interesting!" ]
                     , """("a string doesn't care; yeah?") ; "hello)"""
                         => List [ String "a string doesn't care; yeah?" ]
+                    , """;; first a comment
+(then a list)"""
+                        => List [ Symbol "then", Symbol "a", Symbol "list" ]
                     ]
                     Parse.element
         ]

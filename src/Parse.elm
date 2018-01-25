@@ -41,13 +41,18 @@ comment =
         |. oneOf [ symbol "\n", end ]
 
 
+junk : Parser ()
+junk =
+    lazy <|
+        \_ -> oneOf [ discard, comment, spaceSep ]
+
+
 junkOrElement : Parser (Maybe Element)
 junkOrElement =
     lazy <|
         \_ ->
             oneOf
-                [ succeed Nothing |. discard
-                , succeed Nothing |. comment
+                [ succeed Nothing |. junk
                 , succeed Just |= element
                 ]
 
@@ -68,7 +73,7 @@ element =
     lazy <|
         \_ ->
             oneOf
-                [ succeed identity |. discard |. space |= element
+                [ succeed identity |. junk |= element
                 , realElement
                 ]
 
