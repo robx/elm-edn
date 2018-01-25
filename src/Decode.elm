@@ -33,7 +33,7 @@ module Decode
 # Primitives
 
 @docs Decoder
-@docs string, keyword, bool, int
+@docs string, keyword, bool, int, float
 
 
 # Data Structures
@@ -48,7 +48,7 @@ module Decode
 
 # Mapping
 
-@docs map, map2, map3, map4, map5, map6
+@docs map, map2, map3, map4, map5, map6, map7, map8
 
 
 # Fancy Decoding
