@@ -3,15 +3,16 @@ module Decode
         ( Decoder
         , andThen
         , bool
-        , decodeElement
+        , char
         , decodeString
         , dict
-        , element
         , fail
         , field
         , float
         , int
+        , keyValuePairs
         , keyword
+        , lazy
         , list
         , map
         , map2
@@ -21,8 +22,14 @@ module Decode
         , map6
         , map7
         , map8
+        , nil
+        , oneOf
+        , optional
+        , optionalField
+        , set
         , string
         , succeed
+        , symbol
         , tagged
         , vector
         )
@@ -33,17 +40,29 @@ module Decode
 # Primitives
 
 @docs Decoder
-@docs string, keyword, bool, int, float
+@docs bool, int, float, string
+@docs char, nil, symbol, keyword
 
 
 # Data Structures
 
-@docs field, list, vector, dict, tagged
+@docs optional, list, vector, set, keyValuePairs, dict
+
+
+# Object Primitives
+
+@docs field, optionalField
+@docs tagged
+
+
+# Inconsistent Structure
+
+@docs oneOf
 
 
 # Run Decoders
 
-@docs decodeString, decodeElement
+@docs decodeString
 
 
 # Mapping
@@ -53,13 +72,14 @@ module Decode
 
 # Fancy Decoding
 
-@docs andThen, succeed, fail, element
+@docs lazy, succeed, fail, andThen
 
 -}
 
 import Dict
 import Parse
 import Parser
+import Set
 import Types exposing (..)
 
 
@@ -69,20 +89,14 @@ type alias Decoder a =
     Element -> Result String a
 
 
-{-| Parse the given string into a single EDN element and then run the Decoder on it.
+{-| Parse the given string into a single EDN element and
+and decode it to an Elm value using the given Decoder.
 -}
 decodeString : Decoder a -> String -> Result String a
 decodeString d s =
     Parser.run Parse.onlyElement s
         |> Result.mapError toString
         |> Result.andThen d
-
-
-{-| Run a Decoder on some EDN Element.
--}
-decodeElement : Decoder a -> Element -> Result String a
-decodeElement =
-    identity
 
 
 {-| Transform a decoder.
@@ -92,7 +106,18 @@ map f d =
     Result.map f << d
 
 
-{-| -}
+{-| Try two decoders and then combine the result. We can use this to decode
+objects with many fields:
+type alias Point = { x : Float, y : Float }
+point : Decoder Point
+point =
+map2 Point
+(field "x" float)
+(field "y" float)
+-- decodeString point """{:x 3, :y 4}""" == Ok { x = 3, y = 4 }
+It tries each individual decoder and puts the result together with the `Point`
+constructor.
+-}
 map2 : (a -> b -> value) -> Decoder a -> Decoder b -> Decoder value
 map2 f d1 d2 e =
     Result.map2 f (d1 e) (d2 e)
@@ -138,33 +163,35 @@ map8 f d1 d2 d3 d4 d5 d6 d7 d8 =
 
 
 {-| -}
-andThen : (a -> Decoder b) -> Decoder a -> Decoder b
-andThen f p e =
-    p e |> Result.andThen (\x -> f x e)
+lazy : (() -> Decoder a) -> Decoder a
+lazy f =
+    succeed () |> andThen f
 
 
-{-| -}
+{-| Ignore the input and make the decoder succeed with the given value.
+-}
 succeed : a -> Decoder a
 succeed x =
     always (Ok x)
 
 
-{-| -}
+{-| Ignore the input and make the decoder fail with the given message.
+-}
 fail : String -> Decoder a
 fail err =
     always (Err err)
 
 
+{-| Create a decoder that depends on the result of a previous decoder.
+-}
+andThen : (a -> Decoder b) -> Decoder a -> Decoder b
+andThen f p e =
+    p e |> Result.andThen (\x -> f x e)
+
+
 context : String -> Decoder a -> Decoder a
 context ctx d =
     Result.mapError (\e -> "while decoding " ++ ctx ++ ", " ++ e) << d
-
-
-{-| Do not do anything with an EDN element, just bring it into Elm as a Element.
--}
-element : Decoder Element
-element =
-    Ok
 
 
 wrongType : Element -> Element -> Result String a
@@ -220,6 +247,18 @@ wrongType want have =
     Err <| "expected " ++ desc want ++ " but found " ++ desc have
 
 
+{-| Decode an EDN character into an Elm Char.
+-}
+char : Decoder Char
+char e =
+    case e of
+        Char c ->
+            Ok c
+
+        _ ->
+            wrongType (Char ' ') e
+
+
 {-| Decode an EDN string into an Elm String.
 -}
 string : Decoder String
@@ -244,7 +283,8 @@ int e =
             wrongType (Int 0) e
 
 
-{-| -}
+{-| Decode an EDN floating point number into an Elm `Float`
+-}
 float : Decoder Float
 float e =
     case e of
@@ -255,7 +295,31 @@ float e =
             wrongType (Float 0) e
 
 
-{-| Decode an EDN keyword into an Elm String.
+{-| Decode an EDN nil value into an Elm unit value.
+-}
+nil : Decoder ()
+nil e =
+    case e of
+        Nil ->
+            Ok ()
+
+        _ ->
+            wrongType Nil e
+
+
+{-| Decode an EDN symbol into an Elm `String`.
+-}
+symbol : Decoder String
+symbol e =
+    case e of
+        Symbol s ->
+            Ok s
+
+        _ ->
+            wrongType (Symbol "") e
+
+
+{-| Decode an EDN keyword into an Elm `String`.
 -}
 keyword : Decoder String
 keyword e =
@@ -267,7 +331,7 @@ keyword e =
             wrongType (Keyword "") e
 
 
-{-| Decode an EDN boolean into an Elm Bool.
+{-| Decode an EDN boolean into an Elm `Bool`.
 -}
 bool : Decoder Bool
 bool e =
@@ -289,7 +353,17 @@ seq d l =
             Ok []
 
 
-{-| Decode an EDN list into an Elm List.
+{-| Decode an EDN nil value into `Nothing`, or any other value into an Elm value.
+-}
+optional : Decoder a -> Decoder (Maybe a)
+optional d =
+    oneOf
+        [ map (always Nothing) nil
+        , map Just d
+        ]
+
+
+{-| Decode an EDN list into an Elm `List`.
 -}
 list : Decoder a -> Decoder (List a)
 list d e =
@@ -301,7 +375,7 @@ list d e =
             wrongType (List []) e
 
 
-{-| Decode an EDN vector into an Elm List.
+{-| Decode an EDN vector into an Elm `List`.
 -}
 vector : Decoder a -> Decoder (List a)
 vector d e =
@@ -313,8 +387,22 @@ vector d e =
             wrongType (Vector []) e
 
 
-assocList : Decoder key -> Decoder value -> Decoder (List ( key, value ))
-assocList key value e =
+{-| Decode an EDN set into an Elm `Set`.
+-}
+set : Decoder comparable -> Decoder (Set.Set comparable)
+set d e =
+    case e of
+        Set s ->
+            seq d s |> Result.map Set.fromList
+
+        _ ->
+            wrongType (Set []) e
+
+
+{-| Decode an EDN map into an Elm `List` of pairs.
+-}
+keyValuePairs : Decoder key -> Decoder value -> Decoder (List ( key, value ))
+keyValuePairs key value e =
     let
         merge keyed unkeyed =
             (Dict.toList keyed |> List.map (\( k, v ) -> ( Keyword k, v ))) ++ unkeyed
@@ -341,7 +429,7 @@ assocList key value e =
 -}
 dict : Decoder comparable -> Decoder value -> Decoder (Dict.Dict comparable value)
 dict key value =
-    map Dict.fromList (assocList key value)
+    map Dict.fromList (keyValuePairs key value)
 
 
 {-| Decode an object encoded as a map from keywords to element
@@ -359,19 +447,35 @@ object e =
             wrongType (Map Dict.empty []) e
 
 
-{-| Decode an EDN map field.
+{-| Decode an optional EDN map field.
 -}
-field : String -> Decoder a -> Decoder a
-field f d =
+optionalField : String -> Decoder a -> Decoder (Maybe a)
+optionalField f d =
     map (Dict.get f) object
         |> andThen
             (\maybeElement _ ->
                 case maybeElement of
                     Just e ->
-                        d e
+                        Result.map Just (d e)
 
                     Nothing ->
-                        Err ("field not found: " ++ f)
+                        Ok Nothing
+            )
+
+
+{-| Decode an EDN map field.
+-}
+field : String -> Decoder a -> Decoder a
+field f d =
+    optionalField f d
+        |> andThen
+            (\m ->
+                case m of
+                    Just x ->
+                        succeed x
+
+                    Nothing ->
+                        fail <| "field not found: " ++ f
             )
 
 
@@ -392,11 +496,19 @@ tagged decoders e =
             wrongType (Tagged "" Nil) e
 
 
-(<$>) : (a -> b) -> Result err a -> Result err b
-(<$>) =
-    Result.map
+{-| Try a bunch of different decoders, one after the other. The
+result is the value of the first successful decoder.
+-}
+oneOf : List (Decoder a) -> Decoder a
+oneOf decoders e =
+    case decoders of
+        d :: ds ->
+            case d e of
+                Ok v ->
+                    Ok v
 
+                Err _ ->
+                    oneOf ds e
 
-(<*>) : Result err (a -> b) -> Result err a -> Result err b
-(<*>) f p =
-    f |> Result.andThen (\g -> g <$> p)
+        [] ->
+            Err "oneOf: all decoders failed"

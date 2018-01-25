@@ -227,11 +227,13 @@ list =
         succeed List
             |= (lazy <| \_ -> seq "(" ")")
 
+
 vector : Parser Element
 vector =
     inContext "vector" <|
         succeed Vector
             |= (lazy <| \_ -> seq "[" "]")
+
 
 mapp : Parser Element
 mapp =
