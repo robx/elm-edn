@@ -68,10 +68,9 @@ element : Parser Element
 element =
     lazy <|
         \_ ->
-            oneOf
-                [ succeed identity |. junk |= element
-                , realElement
-                ]
+            succeed identity
+                |. repeat zeroOrMore junk
+                |= realElement
 
 
 realElement : Parser Element
