@@ -19,8 +19,8 @@ import Types exposing (..)
 
 seq : String -> String -> Parser (List Element)
 seq open close =
-    identity
-        |* symbol open
+    succeed identity
+        |. symbol open
         |. space
         |= elements
         |. symbol close
@@ -36,8 +36,7 @@ discard =
 
 comment : Parser ()
 comment =
-    succeed ()
-        |. symbol ";"
+    symbol ";"
         |. ignore zeroOrMore (\c -> c /= '\n')
         |. oneOf [ symbol "\n", end ]
 
@@ -47,23 +46,31 @@ junkOrElement =
     lazy <|
         \_ ->
             oneOf
-                [ Nothing |* discard
-                , Nothing |* comment
-                , Just |$ element
+                [ succeed Nothing |. discard
+                , succeed Nothing |. comment
+                , succeed Just |= element
                 ]
 
 
 elements : Parser (List Element)
 elements =
-    List.filterMap identity
-        |$ repeat zeroOrMore (lazy (\_ -> junkOrElement) |. space)
+    succeed (List.filterMap identity)
+        |= repeat zeroOrMore
+            (lazy (\_ -> junkOrElement)
+                |. space
+            )
 
 
 {-| Parse an EDN element
 -}
 element : Parser Element
 element =
-    lazy <| \_ -> oneOf [ identity |* discard |. space |= element, realElement ]
+    lazy <|
+        \_ ->
+            oneOf
+                [ succeed identity |. discard |. space |= element
+                , realElement
+                ]
 
 
 realElement : Parser Element
@@ -100,22 +107,6 @@ sep =
                 , end
                 ]
         ]
-
-
-{-| Parse an EDN integer
--}
-integer : Parser Element
-integer =
-    Int
-        |$ oneOf
-            [ (*) -1
-                |* symbol "-"
-                |= int
-            , symbol "+"
-                |- int
-            , int
-            ]
-        |. sep
 
 
 isSpace : Char -> Bool
@@ -155,13 +146,13 @@ string =
         part =
             oneOf
                 [ keep oneOrMore (\c -> c /= '\\' && c /= '"')
-                , esc
-                    |* symbol "\\"
+                , succeed esc
+                    |. symbol "\\"
                     |= keep (Exactly 1) (always True)
                 ]
     in
-    (String << String.concat)
-        |* symbol "\""
+    succeed (String << String.concat)
+        |. symbol "\""
         |= repeat zeroOrMore part
         |. symbol "\""
 
@@ -185,32 +176,32 @@ char =
                 _ ->
                     Debug.crash "bad single-char string"
     in
-    Char
-        |* symbol "\\"
+    succeed Char
+        |. symbol "\\"
         |= oneOf
-            [ '\n' |* keyword "newline"
-            , '\x0D' |* keyword "return"
-            , ' ' |* keyword "space"
-            , '\t' |* keyword "tab"
-            , unicodeChar
-                |* symbol "u"
+            [ succeed '\n' |. keyword "newline"
+            , succeed '\x0D' |. keyword "return"
+            , succeed ' ' |. keyword "space"
+            , succeed '\t' |. keyword "tab"
+            , succeed unicodeChar
+                |. symbol "u"
                 |= keep (Exactly 4) Char.isHexDigit
-            , stringToChar
-                |$ keep (Exactly 1) (always True)
+            , succeed stringToChar
+                |= keep (Exactly 1) (always True)
             ]
         |. sep
 
 
 list =
     inContext "list" <|
-        List
-            |$ (lazy <| \_ -> seq "(" ")")
+        succeed List
+            |= (lazy <| \_ -> seq "(" ")")
 
 
 vector =
     inContext "vector" <|
-        Vector
-            |$ (lazy <| \_ -> seq "[" "]")
+        succeed Vector
+            |= (lazy <| \_ -> seq "[" "]")
 
 
 mapp =
@@ -239,16 +230,8 @@ mapp =
 
 set =
     inContext "set" <|
-        Set
-            |$ (lazy <| \_ -> seq "#{" "}")
-
-
-(|*) f p =
-    succeed f |. p
-
-
-(|$) f q =
-    map f q
+        succeed Set
+            |= (lazy <| \_ -> seq "#{" "}")
 
 
 (|-) p q =
@@ -286,14 +269,14 @@ plainSymbol =
             class "*!_?$%&=<>/"
     in
     oneOf
-        [ (++)
-            |$ keep (Exactly 1) (alpha ||| other)
+        [ succeed (++)
+            |= keep (Exactly 1) (alpha ||| other)
             |= keep zeroOrMore (alphanum ||| notfirst ||| other)
-        , (++)
-            |$ keep (Exactly 1) nosecondnum
+        , succeed (++)
+            |= keep (Exactly 1) nosecondnum
             |= oneOf
-                [ (++)
-                    |$ keep (Exactly 1) (alpha ||| notfirst ||| other)
+                [ succeed (++)
+                    |= keep (Exactly 1) (alpha ||| notfirst ||| other)
                     |= keep zeroOrMore (alphanum ||| notfirst ||| other)
                 , succeed ""
                 ]
@@ -320,21 +303,21 @@ symbols =
                 _ ->
                     Symbol s
     in
-    f |$ plainSymbol
+    succeed f |= plainSymbol
 
 
 ednKeyword : Parser Element
 ednKeyword =
-    Keyword
-        |* symbol ":"
+    succeed Keyword
+        |. symbol ":"
         |= plainSymbol
 
 
 tagged : Parser Element
 tagged =
     inContext "tagged" <|
-        Tagged
-            |* symbol "#"
+        succeed Tagged
+            |. symbol "#"
             |= plainSymbol
             |= element
 
@@ -365,30 +348,30 @@ rawNumber =
         digits =
             oneOf
                 [ keep (Exactly 1) (\c -> c == '0')
-                , (++)
-                    |$ keep (Exactly 1) (\c -> Char.isDigit c && c /= '0')
+                , succeed (++)
+                    |= keep (Exactly 1) (\c -> Char.isDigit c && c /= '0')
                     |= keep zeroOrMore (\c -> Char.isDigit c)
                 ]
 
         integer =
-            RawInteger
-                |$ sign
+            succeed RawInteger
+                |= sign
                 |= digits
 
         frac =
             symbol "." |- keep zeroOrMore Char.isDigit
 
         exp =
-            RawInteger
-                |* oneOf [ symbol "e", symbol "E" ]
+            succeed RawInteger
+                |. oneOf [ symbol "e", symbol "E" ]
                 |= sign
                 |= digits
 
         big =
             keep (Exactly 1) (\c -> c == 'M' || c == 'N')
     in
-    RawNumber
-        |$ integer
+    succeed RawNumber
+        |= integer
         |= oneOf [ map Just frac, succeed Nothing ]
         |= oneOf [ map Just exp, succeed Nothing ]
         |= oneOf [ map Just big, succeed Nothing ]
