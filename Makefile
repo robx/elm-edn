@@ -3,7 +3,7 @@
 all: build
 
 build:
-	elm-make --yes
+	elm-make --yes --warn
 
 format:
 	elm-format --yes src tests

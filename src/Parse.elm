@@ -221,18 +221,19 @@ char =
         |. sep
 
 
+list : Parser Element
 list =
     inContext "list" <|
         succeed List
             |= (lazy <| \_ -> seq "(" ")")
 
-
+vector : Parser Element
 vector =
     inContext "vector" <|
         succeed Vector
             |= (lazy <| \_ -> seq "[" "]")
 
-
+mapp : Parser Element
 mapp =
     let
         build keyed unkeyed elements =
@@ -257,20 +258,24 @@ mapp =
         )
 
 
+set : Parser Element
 set =
     inContext "set" <|
         succeed Set
             |= (lazy <| \_ -> seq "#{" "}")
 
 
+(|-) : Parser a -> Parser b -> Parser b
 (|-) p q =
     p |> andThen (\_ -> q)
 
 
+class : String -> Char -> Bool
 class s c =
     String.any ((==) c) s
 
 
+(|||) : (a -> Bool) -> (a -> Bool) -> a -> Bool
 (|||) p q c =
     p c || q c
 
@@ -407,7 +412,6 @@ rawNumber =
         |. sep
 
 
-{-| -}
 number : Parser Element
 number =
     let
