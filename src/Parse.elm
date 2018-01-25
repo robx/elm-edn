@@ -45,16 +45,6 @@ junk =
         \_ -> oneOf [ discard, comment, spaceSep ]
 
 
-junkOrElement : Parser (Maybe Element)
-junkOrElement =
-    lazy <|
-        \_ ->
-            oneOf
-                [ succeed Nothing |. junk
-                , succeed Just |= element
-                ]
-
-
 {-| Parse any number of EDN elements.
 
 Any whitespace, comments and discarded elements at the start
@@ -63,9 +53,17 @@ of the input will be consumed. What comes behind doesn't matter.
 -}
 elements : Parser (List Element)
 elements =
+    let
+        junkOrElement =
+            lazy <|
+                \_ ->
+                    oneOf
+                        [ succeed Nothing |. junk
+                        , succeed Just |= element
+                        ]
+    in
     succeed (List.filterMap identity)
-        |= repeat zeroOrMore
-            (lazy (\_ -> junkOrElement))
+        |= repeat zeroOrMore junkOrElement
 
 
 {-| Parse a single EDN element.
