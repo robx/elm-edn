@@ -21,7 +21,6 @@ seq : String -> String -> Parser (List Element)
 seq open close =
     succeed identity
         |. symbol open
-        |. space
         |= elements
         |. symbol close
 
@@ -30,7 +29,6 @@ discard : Parser ()
 discard =
     inContext "discard" <|
         symbol "#_"
-            |. space
             |. (lazy <| \_ -> element)
 
 
@@ -61,9 +59,7 @@ elements : Parser (List Element)
 elements =
     succeed (List.filterMap identity)
         |= repeat zeroOrMore
-            (lazy (\_ -> junkOrElement)
-                |. space
-            )
+            (lazy (\_ -> junkOrElement))
 
 
 {-| Parse an EDN element
