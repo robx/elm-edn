@@ -29,7 +29,7 @@ discard : Parser ()
 discard =
     inContext "discard" <|
         symbol "#_"
-            |. (lazy <| \_ -> element)
+            |. lazy (\_ -> element)
 
 
 comment : Parser ()
@@ -41,8 +41,7 @@ comment =
 
 junk : Parser ()
 junk =
-    lazy <|
-        \_ -> oneOf [ discard, comment, spaceSep ]
+    lazy (\_ -> oneOf [ discard, comment, spaceSep ])
 
 
 {-| Parse any number of EDN elements.
