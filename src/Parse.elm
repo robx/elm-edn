@@ -34,12 +34,21 @@ discard =
             |. (lazy <| \_ -> element)
 
 
-discardOrElement : Parser (Maybe Element)
-discardOrElement =
+comment : Parser ()
+comment =
+    succeed ()
+        |. symbol ";"
+        |. ignore zeroOrMore (\c -> c /= '\n')
+        |. oneOf [ symbol "\n", end ]
+
+
+junkOrElement : Parser (Maybe Element)
+junkOrElement =
     lazy <|
         \_ ->
             oneOf
                 [ Nothing |* discard
+                , Nothing |* comment
                 , Just |$ element
                 ]
 
@@ -47,7 +56,7 @@ discardOrElement =
 elements : Parser (List Element)
 elements =
     List.filterMap identity
-        |$ repeat zeroOrMore (lazy (\_ -> discardOrElement) |. space)
+        |$ repeat zeroOrMore (lazy (\_ -> junkOrElement) |. space)
 
 
 {-| Parse an EDN element
