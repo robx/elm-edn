@@ -24,6 +24,14 @@ parse cs =
     ( a, b )
 
 
+element =
+    Parse.onlyElement
+
+
+elements =
+    Parse.onlyElements
+
+
 suite : Test
 suite =
     describe "module Parsers"
@@ -33,7 +41,7 @@ suite =
                     [ "()" => List []
                     , "(nil nil nil)" => List [ Nil, Nil, Nil ]
                     ]
-                    Parse.element
+                    element
         , test "nested list" <|
             \_ ->
                 parse
@@ -43,7 +51,7 @@ suite =
                     , "(()nil)" => List [ List [], Nil ]
                     , "(()()nil (nil))" => List [ List [], List [], Nil, List [ Nil ] ]
                     ]
-                    Parse.element
+                    element
         , test "basic parsers" <|
             \_ ->
                 parse
@@ -70,12 +78,12 @@ suite =
                     , """("yo":yo)"""
                         => List [ String "yo", Keyword "yo" ]
                     ]
-                    Parse.element
+                    element
         , fuzz int "parses a random integer" <|
             \i ->
                 Expect.equal
                     (Ok (Int i))
-                    (Parser.run Parse.element (toString i))
+                    (Parser.run element (toString i))
         , test "nesting things" <|
             \_ ->
                 parse
@@ -97,7 +105,7 @@ suite =
                             ]
                     , "({}{}{})" => List [ toMap [], toMap [], toMap [] ]
                     ]
-                    Parse.element
+                    element
         , test "tags" <|
             \_ ->
                 parse
@@ -114,7 +122,7 @@ suite =
                     , "#my/tag[1,2,3]"
                         => Tagged "my/tag" (Vector [ Int 1, Int 2, Int 3 ])
                     ]
-                    Parse.element
+                    element
         , test "triples" <|
             \_ ->
                 parse
@@ -170,7 +178,7 @@ suite =
                                 []
                             )
                     ]
-                    Parse.element
+                    element
         , test "discard" <|
             \_ ->
                 parse
@@ -195,7 +203,7 @@ suite =
                     , "#_ #foo #foo #foo #_#_bar baz zip quux"
                         => Symbol "quux"
                     ]
-                    Parse.element
+                    element
         , test "looooooong list" <|
             -- seems to scale linearly, ran up to 100k
             let
@@ -203,7 +211,7 @@ suite =
                     "(" ++ String.repeat 10000 "()" ++ ")"
             in
             \_ ->
-                case Parser.run Parse.element longList of
+                case Parser.run element longList of
                     Ok _ ->
                         Expect.pass
 
@@ -219,7 +227,7 @@ suite =
                     , "0" => Int 0
                     , "0N" => BigInt { sign = "+", digits = "0" }
                     ]
-                    Parse.element
+                    element
         , test "comments" <|
             \_ ->
                 parse
@@ -232,5 +240,18 @@ suite =
 (then a list)"""
                         => List [ Symbol "then", Symbol "a", Symbol "list" ]
                     ]
-                    Parse.element
+                    element
+        , test "space" <|
+            \_ ->
+                parse
+                    [ " 1 ;" => Int 1
+                    ]
+                    element
+        , test "elemenets" <|
+            \_ ->
+                parse
+                    [ " 1 ;" => [ Int 1 ]
+                    , "1 1 1" => [ Int 1, Int 1, Int 1 ]
+                    ]
+                    elements
         ]

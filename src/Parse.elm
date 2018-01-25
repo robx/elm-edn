@@ -1,11 +1,11 @@
-module Parse exposing (element, elements, onlyElement)
+module Parse exposing (onlyElement, onlyElements)
 
 {-| Parsing EDN
 
 
 # Basic parsers
 
-@docs element, onlyElement, elements
+@docs onlyElement, onlyElements
 
 -}
 
@@ -55,6 +55,12 @@ junkOrElement =
                 ]
 
 
+{-| Parse any number of EDN elements.
+
+Any whitespace, comments and discarded elements at the start
+of the input will be consumed. What comes behind doesn't matter.
+
+-}
 elements : Parser (List Element)
 elements =
     succeed (List.filterMap identity)
@@ -86,7 +92,17 @@ will fail.
 -}
 onlyElement : Parser Element
 onlyElement =
-    element |. space |. end
+    element |. repeat zeroOrMore junk |. end
+
+
+{-| Parse any number of EDN elements.
+
+The whole input will be consumed
+
+-}
+onlyElements : Parser (List Element)
+onlyElements =
+    elements |. end
 
 
 realElement : Parser Element
