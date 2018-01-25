@@ -178,6 +178,8 @@ suite =
                         => List [ Int 1, Int 4 ]
                     , "#_nil nil"
                         => Nil
+                    , "#_nil #_nil nil"
+                        => Nil
                     , "(#_ #tag 3, xxx)"
                         => List [ Symbol "xxx" ]
                     , "(#_ nil)"
