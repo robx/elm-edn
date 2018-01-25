@@ -69,16 +69,16 @@ type alias Decoder a =
     Element -> Result String a
 
 
-{-| Parse the given string into an EDN element and then run the Decoder on it.
+{-| Parse the given string into a single EDN element and then run the Decoder on it.
 -}
 decodeString : Decoder a -> String -> Result String a
 decodeString d s =
-    Parser.run Parse.element s
+    Parser.run Parse.onlyElement s
         |> Result.mapError toString
         |> Result.andThen d
 
 
-{-| Run a Decoder on some JSON Element.
+{-| Run a Decoder on some EDN Element.
 -}
 decodeElement : Decoder a -> Element -> Result String a
 decodeElement =

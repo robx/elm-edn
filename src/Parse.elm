@@ -1,11 +1,11 @@
-module Parse exposing (element)
+module Parse exposing (element, elements, onlyElement)
 
 {-| Parsing EDN
 
 
 # Basic parsers
 
-@docs element
+@docs element, onlyElement, elements
 
 -}
 
@@ -62,7 +62,11 @@ elements =
             (lazy (\_ -> junkOrElement))
 
 
-{-| Parse an EDN element
+{-| Parse a single EDN element.
+
+Any whitespace, comments and discarded elements before the element
+will be consumed. What comes behind doesn't matter.
+
 -}
 element : Parser Element
 element =
@@ -71,6 +75,18 @@ element =
             succeed identity
                 |. repeat zeroOrMore junk
                 |= realElement
+
+
+{-| Parse a single EDN element.
+
+Whitepace, comments and discarded elements before and after the
+element will be consumed. If there is anything else the parser
+will fail.
+
+-}
+onlyElement : Parser Element
+onlyElement =
+    element |. space |. end
 
 
 realElement : Parser Element
