@@ -218,4 +218,14 @@ suite =
                     , "0N" => BigInt { sign = "+", digits = "0" }
                     ]
                     Parse.element
+        , test "comments" <|
+            \_ ->
+                parse
+                    [ "[];;and some more () fun things!!" => Vector []
+                    , "(let us try ; nothing\nsomething interesting!)"
+                        => List [ Symbol "let", Symbol "us", Symbol "try", Symbol "something", Symbol "interesting!" ]
+                    , """("a string doesn't care; yeah?") ; "hello)"""
+                        => List [ String "a string doesn't care; yeah?" ]
+                    ]
+                    Parse.element
         ]
