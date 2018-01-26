@@ -2,6 +2,7 @@ module Decode
     exposing
         ( Decoder
         , andThen
+        , anyList
         , array
         , bool
         , char
@@ -46,7 +47,7 @@ module Decode
 
 # Data Structures
 
-@docs optional, list, array, set, keyValuePairs, dict
+@docs optional, list, array, anyList, set, keyValuePairs, dict
 
 
 # Object Primitives
@@ -204,6 +205,11 @@ context ctx d =
 
 wrongType : Element -> Element -> Result String a
 wrongType want have =
+    wrongTypeMany [ want ] have
+
+
+wrongTypeMany : List Element -> Element -> Result String a
+wrongTypeMany want have =
     let
         desc el =
             case el of
@@ -252,7 +258,11 @@ wrongType want have =
                 Vector _ ->
                     "a vector"
     in
-    Err <| "expected " ++ desc want ++ " but found " ++ desc have
+    Err <|
+        "expected "
+            ++ (String.join " or " <| List.map desc want)
+            ++ " but found "
+            ++ desc have
 
 
 {-| Decode an EDN character into an Elm `Char`.
@@ -393,6 +403,21 @@ array d e =
 
         _ ->
             wrongType (Vector []) e
+
+
+{-| Decode an EDN list or vector into an Elm `List`.
+-}
+anyList : Decoder a -> Decoder (List a)
+anyList d e =
+    case e of
+        List l ->
+            seq d l
+
+        Vector v ->
+            seq d v
+
+        _ ->
+            wrongTypeMany [ List [], Vector [] ] e
 
 
 {-| Decode an EDN set into an Elm `Set`.
