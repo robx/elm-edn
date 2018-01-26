@@ -3,7 +3,7 @@
 all: build
 
 build:
-	elm-make --yes --warn
+	elm-make --yes --warn --docs docs.json
 
 format:
 	elm-format --yes src tests

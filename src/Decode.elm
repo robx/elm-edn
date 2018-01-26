@@ -2,6 +2,7 @@ module Decode
     exposing
         ( Decoder
         , andThen
+        , array
         , bool
         , char
         , decodeString
@@ -31,7 +32,6 @@ module Decode
         , succeed
         , symbol
         , tagged
-        , vector
         )
 
 {-| Element decoders
@@ -46,7 +46,7 @@ module Decode
 
 # Data Structures
 
-@docs optional, list, vector, set, keyValuePairs, dict
+@docs optional, list, array, set, keyValuePairs, dict
 
 
 # Object Primitives
@@ -76,6 +76,7 @@ module Decode
 
 -}
 
+import Array
 import Dict
 import Parse
 import Parser
@@ -108,15 +109,22 @@ map f d =
 
 {-| Try two decoders and then combine the result. We can use this to decode
 objects with many fields:
-type alias Point = { x : Float, y : Float }
-point : Decoder Point
-point =
-map2 Point
-(field "x" float)
-(field "y" float)
--- decodeString point """{:x 3, :y 4}""" == Ok { x = 3, y = 4 }
+
+    type alias Point =
+        { x : Float, y : Float }
+
+    point : Decoder Point
+    point =
+        map2 Point
+            (field "x" float)
+            (field "y" float)
+
+
+    -- decodeString point """{:x 3, :y 4}""" == Ok { x = 3, y = 4 }
+
 It tries each individual decoder and puts the result together with the `Point`
 constructor.
+
 -}
 map2 : (a -> b -> value) -> Decoder a -> Decoder b -> Decoder value
 map2 f d1 d2 e =
@@ -247,7 +255,7 @@ wrongType want have =
     Err <| "expected " ++ desc want ++ " but found " ++ desc have
 
 
-{-| Decode an EDN character into an Elm Char.
+{-| Decode an EDN character into an Elm `Char`.
 -}
 char : Decoder Char
 char e =
@@ -259,7 +267,7 @@ char e =
             wrongType (Char ' ') e
 
 
-{-| Decode an EDN string into an Elm String.
+{-| Decode an EDN string into an Elm `String`.
 -}
 string : Decoder String
 string e =
@@ -271,7 +279,7 @@ string e =
             wrongType (String "") e
 
 
-{-| Decode an EDN integer into an Elm Int.
+{-| Decode an EDN integer into an Elm `Int`.
 -}
 int : Decoder Int
 int e =
@@ -295,7 +303,7 @@ float e =
             wrongType (Float 0) e
 
 
-{-| Decode an EDN nil value into an Elm unit value.
+{-| Decode an EDN nil value.
 -}
 nil : Decoder ()
 nil e =
@@ -375,13 +383,13 @@ list d e =
             wrongType (List []) e
 
 
-{-| Decode an EDN vector into an Elm `List`.
+{-| Decode an EDN vector into an Elm `Array`.
 -}
-vector : Decoder a -> Decoder (List a)
-vector d e =
+array : Decoder a -> Decoder (Array.Array a)
+array d e =
     case e of
         Vector v ->
-            seq d v
+            seq d v |> Result.map Array.fromList
 
         _ ->
             wrongType (Vector []) e
@@ -425,7 +433,7 @@ keyValuePairs key value e =
             wrongType (Map Dict.empty []) e
 
 
-{-| Decode an EDN map into an Elm Dict.
+{-| Decode an EDN map into an Elm `Dict`.
 -}
 dict : Decoder comparable -> Decoder value -> Decoder (Dict.Dict comparable value)
 dict key value =
@@ -477,6 +485,35 @@ field f d =
                     Nothing ->
                         fail <| "field not found: " ++ f
             )
+
+
+{-| Decode a nested object, requiring certain fields.
+-}
+at : List String -> Decoder a -> Decoder a
+at path d =
+    case path of
+        f :: fs ->
+            field f (at fs d)
+
+        [] ->
+            d
+
+
+{-| Decode an EDN list, requiring a particular index.
+-}
+index : Int -> Decoder a -> Decoder a
+index i d e =
+    case e of
+        List l ->
+            case l |> List.drop i |> List.head of
+                Just el ->
+                    d el
+
+                Nothing ->
+                    Err <| "index " ++ toString i ++ " not found in list of length " ++ toString (List.length l)
+
+        _ ->
+            wrongType (List []) e
 
 
 {-| Decode an element based on its tag.
