@@ -13,3 +13,6 @@
 * generates invalid EDN happily (symbols, particularly)
 
 * upstream Parser
+
+* floating point parsing: NaN, Inf
+* big numbers
