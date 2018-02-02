@@ -1,11 +1,11 @@
-module Parse exposing (onlyElement, onlyElements)
+module Parse exposing (onlyElement, onlyElements, plainSymbol)
 
 {-| Parsing EDN
 
 
 # Basic parsers
 
-@docs onlyElement, onlyElements
+@docs onlyElement, onlyElements, plainSymbol
 
 -}
 
@@ -319,7 +319,6 @@ plainSymbol =
                 , succeed ""
                 ]
         ]
-        |. sep
 
 
 {-| symbols parses EDN symbols and true/false/nil
@@ -341,7 +340,9 @@ symbols =
                 _ ->
                     Symbol s
     in
-    succeed f |= plainSymbol
+    succeed f
+        |= plainSymbol
+        |. sep
 
 
 ednKeyword : Parser Element
@@ -349,6 +350,7 @@ ednKeyword =
     succeed Keyword
         |. symbol ":"
         |= plainSymbol
+        |. sep
 
 
 tagged : Parser Element
@@ -357,6 +359,7 @@ tagged =
         succeed Tagged
             |. symbol "#"
             |= plainSymbol
+            |. sep
             |= element
 
 
