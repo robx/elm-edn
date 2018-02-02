@@ -286,7 +286,6 @@ class s c =
 -}
 plainSymbol : Parser String
 plainSymbol =
-    -- ignoring the / issue for now
     let
         alpha =
             Char.isUpper ||| Char.isLower
@@ -304,18 +303,32 @@ plainSymbol =
             class ":#"
 
         other =
-            class "*!_?$%&=<>/"
+            class "*!_?$%&=<>"
+
+        part =
+            oneOf
+                [ succeed (++)
+                    |= keep (Exactly 1) (alpha ||| other)
+                    |= keep zeroOrMore (alphanum ||| nosecondnum ||| notfirst ||| other)
+                , succeed (++)
+                    |= keep (Exactly 1) nosecondnum
+                    |= oneOf
+                        [ succeed (++)
+                            |= keep (Exactly 1) (alpha ||| notfirst ||| other)
+                            |= keep zeroOrMore (alphanum ||| nosecondnum ||| notfirst ||| other)
+                        , succeed ""
+                        ]
+                ]
     in
     oneOf
-        [ succeed (++)
-            |= keep (Exactly 1) (alpha ||| other)
-            |= keep zeroOrMore (alphanum ||| nosecondnum ||| notfirst ||| other)
+        [ succeed "/"
+            |. symbol "/"
         , succeed (++)
-            |= keep (Exactly 1) nosecondnum
+            |= part
             |= oneOf
-                [ succeed (++)
-                    |= keep (Exactly 1) (alpha ||| notfirst ||| other)
-                    |= keep zeroOrMore (alphanum ||| nosecondnum ||| notfirst ||| other)
+                [ succeed ((++) "/")
+                    |. symbol "/"
+                    |= part
                 , succeed ""
                 ]
         ]

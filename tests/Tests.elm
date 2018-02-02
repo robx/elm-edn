@@ -21,6 +21,21 @@ parse cs =
         List.map (\( s, x ) p -> Expect.equal (Ok x) (Parser.run p s)) cs
 
 
+parseOk : List ( String, Bool ) -> Parser.Parser a -> Expectation
+parseOk cs =
+    let
+        ok r =
+            case r of
+                Ok _ ->
+                    True
+
+                Err _ ->
+                    False
+    in
+    Expect.all <|
+        List.map (\( s, x ) p -> Expect.equal x (ok <| Parser.run p s)) cs
+
+
 (=>) a b =
     ( a, b )
 
@@ -260,6 +275,24 @@ suite =
                         , "1 1 1" => [ Int 1, Int 1, Int 1 ]
                         ]
                         elements
+            , test "symbols" <|
+                \_ ->
+                    parseOk
+                        [ "woooo" => True
+                        , "/" => True
+                        , "//" => False
+                        , "12ab" => False
+                        , ".abc" => True
+                        , ".1abc" => False
+                        , "a/b" => True
+                        , "somethinglong/" => False
+                        , "spaces are out" => False
+                        , "more/than/one" => False
+                        , "#nostarting" => False
+                        , "butfine#" => True
+                        , "notthesecond/.1" => False
+                        ]
+                        (Parse.plainSymbol |. Parser.end)
             ]
         , describe "module Encode"
             [ test "plain symbol" <|
