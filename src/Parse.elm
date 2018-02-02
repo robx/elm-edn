@@ -282,6 +282,8 @@ class s c =
     p c || q c
 
 
+{-| plainSymbol parses the symbol-part of EDN symbols, keywords, tags.
+-}
 plainSymbol : Parser String
 plainSymbol =
     -- ignoring the / issue for now
@@ -307,13 +309,13 @@ plainSymbol =
     oneOf
         [ succeed (++)
             |= keep (Exactly 1) (alpha ||| other)
-            |= keep zeroOrMore (alphanum ||| notfirst ||| other)
+            |= keep zeroOrMore (alphanum ||| nosecondnum ||| notfirst ||| other)
         , succeed (++)
             |= keep (Exactly 1) nosecondnum
             |= oneOf
                 [ succeed (++)
                     |= keep (Exactly 1) (alpha ||| notfirst ||| other)
-                    |= keep zeroOrMore (alphanum ||| notfirst ||| other)
+                    |= keep zeroOrMore (alphanum ||| nosecondnum ||| notfirst ||| other)
                 , succeed ""
                 ]
         ]
