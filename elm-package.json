@@ -4,9 +4,7 @@
     "repository": "https://github.com/robx/elm-edn.git",
     "license": "BSD3",
     "source-directories": [
-        "src",
-        "../parser/src",
-        "../parser/src/Parser"
+        "src"
     ],
     "exposed-modules": [
         "Decode",
