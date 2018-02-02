@@ -21,36 +21,43 @@ import Json.Encode as Json
 import Types
 
 
-{-| -}
+{-| An EDN element.
+-}
 type alias Element =
     Types.Element
 
 
-{-| -}
+{-| Make an EDN string from an Elm `String`.
+-}
 string : String -> Element
 string =
     Types.String
 
 
-{-| -}
+{-| Make an EDN integer from an Elm `Int`.
+-}
 int : Int -> Element
 int =
     Types.Int
 
 
-{-| -}
+{-| Make an EDN floating point number from an Elm `Float`.
+-}
 float : Float -> Element
 float =
     Types.Float
 
 
-{-| -}
+{-| Make an EDN list from an Elm `List` of EDN elements.
+-}
 list : List Element -> Element
 list =
     Types.List
 
 
-{-| -}
+{-| Make an EDN object (map from keyword to element) from a list of
+pairs of field name and field value.
+-}
 object : List ( String, Element ) -> Element
 object o =
     Types.Map
@@ -58,7 +65,8 @@ object o =
         []
 
 
-{-| -}
+{-| Encode an EDN element to EDN.
+-}
 encode : Element -> String
 encode e =
     case e of
@@ -91,7 +99,8 @@ encode e =
             Debug.crash <| "unsupported element: " ++ toString e
 
 
-{-| -}
+{-| Make a tagged EDN element from a tag and and element.
+-}
 tag : String -> Element -> Element
 tag =
     Types.Tagged
