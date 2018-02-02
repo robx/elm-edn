@@ -2,6 +2,7 @@ module Encode
     exposing
         ( Element
         , encode
+        , float
         , int
         , list
         , object
@@ -11,7 +12,7 @@ module Encode
 
 {-| Encoding EDN elements
 
-@docs Element, encode, string, int, object, list, tag
+@docs Element, encode, string, int, float, object, list, tag
 
 -}
 
@@ -35,6 +36,12 @@ string =
 int : Int -> Element
 int =
     Types.Int
+
+
+{-| -}
+float : Float -> Element
+float =
+    Types.Float
 
 
 {-| -}
