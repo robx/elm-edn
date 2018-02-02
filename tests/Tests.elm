@@ -203,12 +203,11 @@ suite =
                     , "#_ #foo #foo #foo #_#_bar baz zip quux"
                         => Symbol "quux"
                     ]
-                    element
         , test "looooooong list" <|
             -- seems to scale linearly, ran up to 100k
             let
                 longList =
-                    "(" ++ String.repeat 10000 "()" ++ ")"
+                    "(" ++ String.repeat 1000 "()" ++ ")"
             in
             \_ ->
                 case Parser.run element longList of
