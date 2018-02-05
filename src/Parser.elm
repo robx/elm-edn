@@ -78,6 +78,7 @@ import Parser.Internal as Internal exposing (Parser(..), Step(..))
 import ParserPrimitives as Prim
 
 
+
 -- PARSER
 
 
@@ -344,9 +345,9 @@ Read about parser pipelines **[here]**. They are really nice!
 (|.) : Parser keep -> Parser ignore -> Parser keep
 (|.) keepParser ignoreParser =
     map2 always keepParser ignoreParser
+
+
 infixl 5 |.
-
-
 infixl 5 |=
 
 
@@ -488,6 +489,7 @@ oneOfHelp state problems parsers =
                 (Bad problem { row, col }) as step ->
                     if state.row == row && state.col == col then
                         oneOfHelp state (problem :: problems) remainingParsers
+
                     else
                         step
 
@@ -535,11 +537,13 @@ repeatExactly : Int -> (State -> Step a) -> List a -> State -> Step (List a)
 repeatExactly n parse revList state1 =
     if n <= 0 then
         Good (List.reverse revList) state1
+
     else
         case parse state1 of
             Good a state2 ->
                 if state1.row == state2.row && state1.col == state2.col then
                     Bad BadRepeat state2
+
                 else
                     repeatExactly (n - 1) parse (a :: revList) state2
 
@@ -553,12 +557,14 @@ repeatAtLeast n parse revList state1 =
         Good a state2 ->
             if state1.row == state2.row && state1.col == state2.col then
                 Bad BadRepeat state2
+
             else
                 repeatAtLeast (n - 1) parse (a :: revList) state2
 
         Bad x state2 ->
             if state1.row == state2.row && state1.col == state2.col && n <= 0 then
                 Good (List.reverse revList) state1
+
             else
                 Bad x state2
 
@@ -618,6 +624,7 @@ delayedCommitMap func (Parser parseA) (Parser parseB) =
                         Bad x state3 ->
                             if state2.row == state3.row && state2.col == state3.col then
                                 Bad x state1
+
                             else
                                 Bad x state3
 
@@ -658,6 +665,7 @@ token makeProblem str =
             in
             if newOffset == -1 then
                 Bad (makeProblem str) state
+
             else
                 Good ()
                     { source = source
@@ -733,12 +741,15 @@ intHelp : Int -> Int -> String -> Result Int Int
 intHelp offset zeroOffset source =
     if zeroOffset == -1 then
         Internal.chompDigits Char.isDigit offset source
+
     else if Prim.isSubChar isX zeroOffset source /= -1 then
         Internal.chompDigits Char.isHexDigit (offset + 2) source
         --  else if Prim.isSubChar isO zeroOffset source /= -1 then
         --    Internal.chompDigits Char.isOctDigit (offset + 2) source
+
     else if Prim.isSubChar Internal.isBadIntEnd zeroOffset source == -1 then
         Ok zeroOffset
+
     else
         Err zeroOffset
 
@@ -826,6 +837,7 @@ floatHelp : Int -> Int -> String -> Result Int Int
 floatHelp offset zeroOffset source =
     if zeroOffset >= 0 then
         Internal.chompDotAndExp zeroOffset source
+
     else
         let
             dotOffset =
@@ -841,6 +853,7 @@ floatHelp offset zeroOffset source =
             Ok n ->
                 if n == offset then
                     Err n
+
                 else
                     result
 
@@ -878,6 +891,7 @@ end =
         \state ->
             if String.length state.source == state.offset then
                 Good () state
+
             else
                 Bad ExpectingEnd state
 
@@ -1056,6 +1070,7 @@ ignoreExactly n predicate source offset indent context row col =
             , row = row
             , col = col
             }
+
     else
         let
             newOffset =
@@ -1070,8 +1085,10 @@ ignoreExactly n predicate source offset indent context row col =
                 , row = row
                 , col = col
                 }
+
         else if newOffset == -2 then
             ignoreExactly (n - 1) predicate source (offset + 1) indent context (row + 1) 1
+
         else
             ignoreExactly (n - 1) predicate source newOffset indent context row (col + 1)
 
@@ -1096,12 +1113,15 @@ ignoreAtLeast n predicate source offset indent context row col =
         in
         if n <= 0 then
             Good () state
+
         else
             Bad BadRepeat state
         -- matched a newline
+
     else if newOffset == -2 then
         ignoreAtLeast (n - 1) predicate source (offset + 1) indent context (row + 1) 1
         -- normal match
+
     else
         ignoreAtLeast (n - 1) predicate source newOffset indent context row (col + 1)
 
@@ -1141,6 +1161,7 @@ ignoreUntil str =
             in
             if newOffset == -1 then
                 Bad (ExpectingClosing str) state
+
             else
                 Good ()
                     { source = source

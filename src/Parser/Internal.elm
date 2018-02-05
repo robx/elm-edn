@@ -13,6 +13,7 @@ import Char
 import ParserPrimitives as Prim
 
 
+
 -- PARSERS
 
 
@@ -47,6 +48,7 @@ chomp isGood offset source =
     in
     if newOffset < 0 then
         offset
+
     else
         chomp isGood newOffset source
 
@@ -65,9 +67,11 @@ chompDigits isValidDigit offset source =
     if newOffset == offset then
         Err newOffset
         -- ends with non-digit characters
+
     else if Prim.isSubChar isBadIntEnd newOffset source /= -1 then
         Err newOffset
         -- all valid digits!
+
     else
         Ok newOffset
 
@@ -93,6 +97,7 @@ chompDotAndExp offset source =
     in
     if dotOffset == -1 then
         chompExp offset source
+
     else
         chompExp (chomp Char.isDigit dotOffset source) source
 
@@ -110,6 +115,7 @@ chompExp offset source =
     in
     if eOffset == -1 then
         Ok offset
+
     else
         let
             opOffset =
@@ -118,13 +124,16 @@ chompExp offset source =
             expOffset =
                 if opOffset == -1 then
                     eOffset
+
                 else
                     opOffset
         in
         if Prim.isSubChar isZero expOffset source /= -1 then
             Err expOffset
+
         else if Prim.isSubChar Char.isDigit expOffset source == -1 then
             Err expOffset
+
         else
             chompDigits Char.isDigit expOffset source
 
