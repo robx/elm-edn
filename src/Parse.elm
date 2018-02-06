@@ -12,36 +12,36 @@ module Parse exposing (onlyElement, onlyElements, plainSymbol)
 import Char
 import Dict
 import List
-import Parser exposing (..)
+import Parser as P exposing ((|.), (|=), Parser)
 import String
 import Types exposing (..)
 
 
 seq : String -> String -> Parser (List Element)
 seq open close =
-    succeed identity
-        |. symbol open
+    P.succeed identity
+        |. P.symbol open
         |= elements
-        |. symbol close
+        |. P.symbol close
 
 
 discard : Parser ()
 discard =
-    inContext "discard" <|
-        symbol "#_"
-            |. lazy (\_ -> element)
+    P.inContext "discard" <|
+        P.symbol "#_"
+            |. P.lazy (\_ -> element)
 
 
 comment : Parser ()
 comment =
-    symbol ";"
-        |. ignore zeroOrMore (\c -> c /= '\n')
-        |. oneOf [ symbol "\n", end ]
+    P.symbol ";"
+        |. P.ignore P.zeroOrMore (\c -> c /= '\n')
+        |. P.oneOf [ P.symbol "\n", P.end ]
 
 
 junk : Parser ()
 junk =
-    lazy (\_ -> oneOf [ discard, comment, spaceSep ])
+    P.lazy (\_ -> P.oneOf [ discard, comment, spaceSep ])
 
 
 {-| Parse any number of EDN elements.
@@ -54,15 +54,15 @@ elements : Parser (List Element)
 elements =
     let
         junkOrElement =
-            lazy <|
+            P.lazy <|
                 \_ ->
-                    oneOf
-                        [ succeed Nothing |. junk
-                        , succeed Just |= element
+                    P.oneOf
+                        [ P.succeed Nothing |. junk
+                        , P.succeed Just |= element
                         ]
     in
-    succeed (List.filterMap identity)
-        |= repeat zeroOrMore junkOrElement
+    P.succeed (List.filterMap identity)
+        |= P.repeat P.zeroOrMore junkOrElement
 
 
 {-| Parse a single EDN element.
@@ -73,10 +73,10 @@ will be consumed. What comes behind doesn't matter.
 -}
 element : Parser Element
 element =
-    lazy <|
+    P.lazy <|
         \_ ->
-            succeed identity
-                |. repeat zeroOrMore junk
+            P.succeed identity
+                |. P.repeat P.zeroOrMore junk
                 |= realElement
 
 
@@ -89,7 +89,7 @@ will fail.
 -}
 onlyElement : Parser Element
 onlyElement =
-    element |. repeat zeroOrMore junk |. end
+    element |. P.repeat P.zeroOrMore junk |. P.end
 
 
 {-| Parse any number of EDN elements.
@@ -99,17 +99,17 @@ The whole input will be consumed
 -}
 onlyElements : Parser (List Element)
 onlyElements =
-    elements |. end
+    elements |. P.end
 
 
 realElement : Parser Element
 realElement =
-    lazy <|
+    P.lazy <|
         \_ ->
-            oneOf
+            P.oneOf
                 [ list
                 , vector
-                , mapp
+                , map
                 , set
                 , number
                 , string
@@ -122,18 +122,18 @@ realElement =
 
 sep : Parser ()
 sep =
-    oneOf
+    P.oneOf
         [ spaceSep
-        , Parser.lookAhead <|
-            oneOf
-                [ symbol "("
-                , symbol "["
-                , symbol "{"
-                , symbol ")"
-                , symbol "]"
-                , symbol "}"
-                , symbol "\""
-                , end
+        , P.lookAhead <|
+            P.oneOf
+                [ P.symbol "("
+                , P.symbol "["
+                , P.symbol "{"
+                , P.symbol ")"
+                , P.symbol "]"
+                , P.symbol "}"
+                , P.symbol "\""
+                , P.end
                 ]
         ]
 
@@ -145,12 +145,12 @@ isSpace c =
 
 space : Parser ()
 space =
-    Parser.ignore Parser.zeroOrMore isSpace
+    P.ignore P.zeroOrMore isSpace
 
 
 spaceSep : Parser ()
 spaceSep =
-    Parser.ignore Parser.oneOrMore isSpace
+    P.ignore P.oneOrMore isSpace
 
 
 {-| Parses an EDN string
@@ -173,17 +173,17 @@ string =
                     c
 
         part =
-            oneOf
-                [ keep oneOrMore (\c -> c /= '\\' && c /= '"')
-                , succeed esc
-                    |. symbol "\\"
-                    |= keep (Exactly 1) (always True)
+            P.oneOf
+                [ P.keep P.oneOrMore (\c -> c /= '\\' && c /= '"')
+                , P.succeed esc
+                    |. P.symbol "\\"
+                    |= P.keep (P.Exactly 1) (always True)
                 ]
     in
-    succeed (String << String.concat)
-        |. symbol "\""
-        |= repeat zeroOrMore part
-        |. symbol "\""
+    P.succeed (String << String.concat)
+        |. P.symbol "\""
+        |= P.repeat P.zeroOrMore part
+        |. P.symbol "\""
 
 
 {-| unicodeChar translates a four character hexadecimal string
@@ -205,38 +205,38 @@ char =
                 _ ->
                     Debug.crash "bad single-char string"
     in
-    succeed Char
-        |. symbol "\\"
-        |= oneOf
-            [ succeed '\n' |. keyword "newline"
-            , succeed '\x0D' |. keyword "return"
-            , succeed ' ' |. keyword "space"
-            , succeed '\t' |. keyword "tab"
-            , succeed unicodeChar
-                |. symbol "u"
-                |= keep (Exactly 4) Char.isHexDigit
-            , succeed stringToChar
-                |= keep (Exactly 1) (always True)
+    P.succeed Char
+        |. P.symbol "\\"
+        |= P.oneOf
+            [ P.succeed '\n' |. P.keyword "newline"
+            , P.succeed '\x0D' |. P.keyword "return"
+            , P.succeed ' ' |. P.keyword "space"
+            , P.succeed '\t' |. P.keyword "tab"
+            , P.succeed unicodeChar
+                |. P.symbol "u"
+                |= P.keep (P.Exactly 4) Char.isHexDigit
+            , P.succeed stringToChar
+                |= P.keep (P.Exactly 1) (always True)
             ]
         |. sep
 
 
 list : Parser Element
 list =
-    inContext "list" <|
-        succeed List
-            |= (lazy <| \_ -> seq "(" ")")
+    P.inContext "list" <|
+        P.succeed List
+            |= (P.lazy <| \_ -> seq "(" ")")
 
 
 vector : Parser Element
 vector =
-    inContext "vector" <|
-        succeed Vector
-            |= (lazy <| \_ -> seq "[" "]")
+    P.inContext "vector" <|
+        P.succeed Vector
+            |= (P.lazy <| \_ -> seq "[" "]")
 
 
-mapp : Parser Element
-mapp =
+map : Parser Element
+map =
     let
         build keyed unkeyed elements =
             case elements of
@@ -249,27 +249,22 @@ mapp =
                             build keyed (( key, value ) :: unkeyed) rest
 
                 [] ->
-                    succeed <| Map keyed (List.reverse unkeyed)
+                    P.succeed <| Map keyed (List.reverse unkeyed)
 
                 _ ->
-                    fail "uneven number of map elements"
+                    P.fail "uneven number of map elements"
     in
-    inContext "map" <|
-        ((lazy <| \_ -> seq "{" "}")
-            |> andThen (build Dict.empty [])
+    P.inContext "map" <|
+        ((P.lazy <| \_ -> seq "{" "}")
+            |> P.andThen (build Dict.empty [])
         )
 
 
 set : Parser Element
 set =
-    inContext "set" <|
-        succeed Set
-            |= (lazy <| \_ -> seq "#{" "}")
-
-
-(|-) : Parser a -> Parser b -> Parser b
-(|-) p q =
-    p |> andThen (\_ -> q)
+    P.inContext "set" <|
+        P.succeed Set
+            |= (P.lazy <| \_ -> seq "#{" "}")
 
 
 class : String -> Char -> Bool
@@ -306,30 +301,30 @@ plainSymbol =
             class "*!_?$%&=<>"
 
         part =
-            oneOf
-                [ succeed (++)
-                    |= keep (Exactly 1) (alpha ||| other)
-                    |= keep zeroOrMore (alphanum ||| nosecondnum ||| notfirst ||| other)
-                , succeed (++)
-                    |= keep (Exactly 1) nosecondnum
-                    |= oneOf
-                        [ succeed (++)
-                            |= keep (Exactly 1) (alpha ||| notfirst ||| other)
-                            |= keep zeroOrMore (alphanum ||| nosecondnum ||| notfirst ||| other)
-                        , succeed ""
+            P.oneOf
+                [ P.succeed (++)
+                    |= P.keep (P.Exactly 1) (alpha ||| other)
+                    |= P.keep P.zeroOrMore (alphanum ||| nosecondnum ||| notfirst ||| other)
+                , P.succeed (++)
+                    |= P.keep (P.Exactly 1) nosecondnum
+                    |= P.oneOf
+                        [ P.succeed (++)
+                            |= P.keep (P.Exactly 1) (alpha ||| notfirst ||| other)
+                            |= P.keep P.zeroOrMore (alphanum ||| nosecondnum ||| notfirst ||| other)
+                        , P.succeed ""
                         ]
                 ]
     in
-    oneOf
-        [ succeed "/"
-            |. symbol "/"
-        , succeed (++)
+    P.oneOf
+        [ P.succeed "/"
+            |. P.symbol "/"
+        , P.succeed (++)
             |= part
-            |= oneOf
-                [ succeed ((++) "/")
-                    |. symbol "/"
+            |= P.oneOf
+                [ P.succeed ((++) "/")
+                    |. P.symbol "/"
                     |= part
-                , succeed ""
+                , P.succeed ""
                 ]
         ]
 
@@ -353,24 +348,24 @@ symbols =
                 _ ->
                     Symbol s
     in
-    succeed f
+    P.succeed f
         |= plainSymbol
         |. sep
 
 
 ednKeyword : Parser Element
 ednKeyword =
-    succeed Keyword
-        |. symbol ":"
+    P.succeed Keyword
+        |. P.symbol ":"
         |= plainSymbol
         |. sep
 
 
 tagged : Parser Element
 tagged =
-    inContext "tagged" <|
-        succeed Tagged
-            |. symbol "#"
+    P.inContext "tagged" <|
+        P.succeed Tagged
+            |. P.symbol "#"
             |= plainSymbol
             |. sep
             |= element
@@ -394,41 +389,43 @@ rawNumber : Parser RawNumber
 rawNumber =
     let
         sign =
-            oneOf
-                [ keep (Exactly 1) (\c -> c == '+' || c == '-')
-                , succeed "+"
+            P.oneOf
+                [ P.keep (P.Exactly 1) (\c -> c == '+' || c == '-')
+                , P.succeed "+"
                 ]
 
         digits =
-            oneOf
-                [ keep (Exactly 1) (\c -> c == '0')
-                , succeed (++)
-                    |= keep (Exactly 1) (\c -> Char.isDigit c && c /= '0')
-                    |= keep zeroOrMore (\c -> Char.isDigit c)
+            P.oneOf
+                [ P.keep (P.Exactly 1) (\c -> c == '0')
+                , P.succeed (++)
+                    |= P.keep (P.Exactly 1) (\c -> Char.isDigit c && c /= '0')
+                    |= P.keep P.zeroOrMore (\c -> Char.isDigit c)
                 ]
 
         integer =
-            succeed RawInteger
+            P.succeed RawInteger
                 |= sign
                 |= digits
 
         frac =
-            symbol "." |- keep zeroOrMore Char.isDigit
+            P.succeed identity
+                |. P.symbol "."
+                |= P.keep P.zeroOrMore Char.isDigit
 
         exp =
-            succeed RawInteger
-                |. oneOf [ symbol "e", symbol "E" ]
+            P.succeed RawInteger
+                |. P.oneOf [ P.symbol "e", P.symbol "E" ]
                 |= sign
                 |= digits
 
         big =
-            keep (Exactly 1) (\c -> c == 'M' || c == 'N')
+            P.keep (P.Exactly 1) (\c -> c == 'M' || c == 'N')
     in
-    succeed RawNumber
+    P.succeed RawNumber
         |= integer
-        |= oneOf [ map Just frac, succeed Nothing ]
-        |= oneOf [ map Just exp, succeed Nothing ]
-        |= oneOf [ map Just big, succeed Nothing ]
+        |= P.oneOf [ P.map Just frac, P.succeed Nothing ]
+        |= P.oneOf [ P.map Just exp, P.succeed Nothing ]
+        |= P.oneOf [ P.map Just big, P.succeed Nothing ]
         |. sep
 
 
@@ -457,13 +454,13 @@ number =
         f n =
             case ( n.frac, n.exp, n.big ) of
                 ( Nothing, Nothing, Nothing ) ->
-                    succeed <| Int <| rawToInt n.integer
+                    P.succeed <| Int <| rawToInt n.integer
 
                 ( Nothing, Nothing, Just "N" ) ->
-                    succeed <| BigInt n.integer
+                    P.succeed <| BigInt n.integer
 
                 ( _, _, Nothing ) ->
-                    succeed <|
+                    P.succeed <|
                         Float <|
                             strToFloat <|
                                 String.concat
@@ -476,13 +473,13 @@ number =
                                     ]
 
                 ( _, _, Just "M" ) ->
-                    succeed <|
+                    P.succeed <|
                         BigFloat n.integer
                             (Maybe.withDefault "0" n.frac)
                             (Maybe.withDefault { sign = "+", digits = "0" } n.exp)
 
                 _ ->
-                    fail "mix of integer and floating point"
+                    P.fail "mix of integer and floating point"
     in
     rawNumber
-        |> andThen f
+        |> P.andThen f
