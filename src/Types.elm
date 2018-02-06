@@ -11,7 +11,7 @@ import Dict exposing (Dict)
 
 {-| An EDN element
 -}
-type Element
+type Element a
     = Nil
     | Bool Bool
     | String String
@@ -22,8 +22,9 @@ type Element
     | BigInt { sign : String, digits : String }
     | Float Float
     | BigFloat { sign : String, digits : String } String { sign : String, digits : String }
-    | Set (List Element)
-    | List (List Element)
-    | Vector (List Element)
-    | Map (Dict String Element) (List ( Element, Element ))
-    | Tagged String Element
+    | Set (List (Element a))
+    | List (List (Element a))
+    | Vector (List (Element a))
+    | Map (Dict String (Element a)) (List ( Element a, Element a ))
+    | Tagged String (Element a)
+    | Custom a

@@ -56,7 +56,7 @@ import Types
 {-| An EDN element.
 -}
 type alias Element =
-    Types.Element
+    Types.Element ()
 
 
 {-| An EDN symbol.

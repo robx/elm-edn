@@ -10,7 +10,7 @@ import Test exposing (..)
 import Types exposing (..)
 
 
-toMap : List ( Element, Element ) -> Element
+toMap : List ( Element a, Element a ) -> Element a
 toMap l =
     Map Dict.empty l
 
@@ -41,11 +41,11 @@ parseOk cs =
 
 
 element =
-    Parse.onlyElement
+    Parse.onlyElement (always Nothing)
 
 
 elements =
-    Parse.onlyElements
+    Parse.onlyElements (always Nothing)
 
 
 suite : Test

@@ -88,7 +88,7 @@ import Types exposing (..)
 {-| A value that knows how to decode EDN elements.
 -}
 type alias Decoder a =
-    Element -> Result String a
+    Element () -> Result String a
 
 
 {-| Parse the given string into a single EDN element and
@@ -96,7 +96,7 @@ and decode it to an Elm value using the given Decoder.
 -}
 decodeString : Decoder a -> String -> Result String a
 decodeString d s =
-    Parser.run Parse.onlyElement s
+    Parser.run (Parse.onlyElement (always Nothing)) s
         |> Result.mapError toString
         |> Result.andThen d
 
@@ -203,12 +203,12 @@ context ctx d =
     Result.mapError (\e -> "while decoding " ++ ctx ++ ", " ++ e) << d
 
 
-wrongType : Element -> Element -> Result String a
+wrongType : Element () -> Element () -> Result String a
 wrongType want have =
     wrongTypeMany [ want ] have
 
 
-wrongTypeMany : List Element -> Element -> Result String a
+wrongTypeMany : List (Element ()) -> Element () -> Result String a
 wrongTypeMany want have =
     let
         desc el =
@@ -257,6 +257,9 @@ wrongTypeMany want have =
 
                 Vector _ ->
                     "a vector"
+
+                Custom _ ->
+                    "a custom value (bug)"
     in
     Err <|
         "expected "
@@ -362,7 +365,7 @@ bool e =
             wrongType (Bool False) e
 
 
-seq : Decoder a -> List Element -> Result String (List a)
+seq : Decoder a -> List (Element ()) -> Result String (List a)
 seq d l =
     case l of
         f :: fs ->
@@ -468,7 +471,7 @@ dict key value =
 
 {-| Decode an object encoded as a map from keywords to element
 -}
-object : Decoder (Dict.Dict String Element)
+object : Decoder (Dict.Dict String (Element ()))
 object e =
     case e of
         Map keyed [] ->

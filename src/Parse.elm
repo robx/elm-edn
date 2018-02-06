@@ -17,11 +17,19 @@ import String
 import Types exposing (..)
 
 
-seq : String -> String -> Parser (List Element)
-seq open close =
+type alias Config a =
+    String -> Maybe (Element a -> Result String a)
+
+
+type alias CustomParser a b =
+    Config a -> Parser b
+
+
+seq : String -> String -> CustomParser a (List (Element a))
+seq open close config =
     P.succeed identity
         |. P.symbol open
-        |= elements
+        |= elements config
         |. P.symbol close
 
 
@@ -29,7 +37,7 @@ discard : Parser ()
 discard =
     P.inContext "discard" <|
         P.symbol "#_"
-            |. P.lazy (\_ -> element)
+            |. P.lazy (\_ -> element (always Nothing))
 
 
 comment : Parser ()
@@ -50,15 +58,15 @@ Any whitespace, comments and discarded elements at the start
 of the input will be consumed. What comes behind doesn't matter.
 
 -}
-elements : Parser (List Element)
-elements =
+elements : CustomParser a (List (Element a))
+elements config =
     let
         junkOrElement =
             P.lazy <|
                 \_ ->
                     P.oneOf
                         [ P.succeed Nothing |. junk
-                        , P.succeed Just |= element
+                        , P.succeed Just |= element config
                         ]
     in
     P.succeed (List.filterMap identity)
@@ -71,13 +79,13 @@ Any whitespace, comments and discarded elements before the element
 will be consumed. What comes behind doesn't matter.
 
 -}
-element : Parser Element
-element =
+element : CustomParser a (Element a)
+element config =
     P.lazy <|
         \_ ->
             P.succeed identity
                 |. P.repeat P.zeroOrMore junk
-                |= realElement
+                |= realElement config
 
 
 {-| Parse a single EDN element.
@@ -87,9 +95,9 @@ element will be consumed. If there is anything else the parser
 will fail.
 
 -}
-onlyElement : Parser Element
-onlyElement =
-    element |. P.repeat P.zeroOrMore junk |. P.end
+onlyElement : CustomParser a (Element a)
+onlyElement config =
+    element config |. P.repeat P.zeroOrMore junk |. P.end
 
 
 {-| Parse any number of EDN elements.
@@ -97,25 +105,25 @@ onlyElement =
 The whole input will be consumed
 
 -}
-onlyElements : Parser (List Element)
-onlyElements =
-    elements |. P.end
+onlyElements : CustomParser a (List (Element a))
+onlyElements config =
+    elements config |. P.end
 
 
-realElement : Parser Element
-realElement =
+realElement : CustomParser a (Element a)
+realElement config =
     P.lazy <|
         \_ ->
             P.oneOf
-                [ list
-                , vector
-                , map
-                , set
+                [ list config
+                , vector config
+                , map config
+                , set config
                 , number
                 , string
                 , symbols
                 , ednKeyword
-                , tagged
+                , tagged config
                 , char
                 ]
 
@@ -155,7 +163,7 @@ spaceSep =
 
 {-| Parses an EDN string
 -}
-string : Parser Element
+string : Parser (Element a)
 string =
     let
         esc c =
@@ -186,7 +194,7 @@ string =
         |. P.symbol "\""
 
 
-char : Parser Element
+char : Parser (Element a)
 char =
     P.succeed Char
         |. P.symbol "\\"
@@ -203,22 +211,22 @@ char =
         |. sep
 
 
-list : Parser Element
-list =
+list : CustomParser a (Element a)
+list config =
     P.inContext "list" <|
         P.succeed List
-            |= (P.lazy <| \_ -> seq "(" ")")
+            |= (P.lazy <| \_ -> seq "(" ")" config)
 
 
-vector : Parser Element
-vector =
+vector : CustomParser a (Element a)
+vector config =
     P.inContext "vector" <|
         P.succeed Vector
-            |= (P.lazy <| \_ -> seq "[" "]")
+            |= (P.lazy <| \_ -> seq "[" "]" config)
 
 
-map : Parser Element
-map =
+map : CustomParser a (Element a)
+map config =
     let
         build keyed unkeyed elements =
             case elements of
@@ -237,16 +245,16 @@ map =
                     P.fail "uneven number of map elements"
     in
     P.inContext "map" <|
-        ((P.lazy <| \_ -> seq "{" "}")
+        ((P.lazy <| \_ -> seq "{" "}" config)
             |> P.andThen (build Dict.empty [])
         )
 
 
-set : Parser Element
-set =
+set : CustomParser a (Element a)
+set config =
     P.inContext "set" <|
         P.succeed Set
-            |= (P.lazy <| \_ -> seq "#{" "}")
+            |= (P.lazy <| \_ -> seq "#{" "}" config)
 
 
 class : String -> Char -> Bool
@@ -313,7 +321,7 @@ plainSymbol =
 
 {-| symbols parses EDN symbols and true/false/nil
 -}
-symbols : Parser Element
+symbols : Parser (Element a)
 symbols =
     let
         f s =
@@ -335,7 +343,7 @@ symbols =
         |. sep
 
 
-ednKeyword : Parser Element
+ednKeyword : Parser (Element a)
 ednKeyword =
     P.succeed Keyword
         |. P.symbol ":"
@@ -343,14 +351,35 @@ ednKeyword =
         |. sep
 
 
-tagged : Parser Element
-tagged =
+tagged : CustomParser a (Element a)
+tagged config =
+    let
+        tag : CustomParser a ( String, Element a )
+        tag cfg =
+            P.succeed (,)
+                |. P.symbol "#"
+                |= plainSymbol
+                |. sep
+                |= element cfg
+
+        f : Config a -> ( String, Element a ) -> Parser (Element a)
+        f cfg ( t, e ) =
+            case cfg t of
+                Just dec ->
+                    case dec e of
+                        Ok v ->
+                            P.succeed (Custom v)
+
+                        Err err ->
+                            P.fail <| "custom parser for tag " ++ t ++ ": " ++ err
+
+                Nothing ->
+                    P.succeed <| Tagged t e
+    in
     P.inContext "tagged" <|
-        P.succeed Tagged
-            |. P.symbol "#"
-            |= plainSymbol
-            |. sep
-            |= element
+        (tag config
+            |> P.andThen (f config)
+        )
 
 
 type alias RawInteger =
@@ -411,7 +440,7 @@ rawNumber =
         |. sep
 
 
-number : Parser Element
+number : Parser (Element a)
 number =
     let
         rawToStr raw =
