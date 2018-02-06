@@ -265,16 +265,17 @@ wrongTypeMany want have =
             ++ desc have
 
 
-{-| Decode an EDN character into an Elm `Char`.
+{-| Decode an EDN character into an Elm `String` of the raw
+EDN character element.
 -}
-char : Decoder Char
+char : Decoder String
 char e =
     case e of
         Char c ->
             Ok c
 
         _ ->
-            wrongType (Char ' ') e
+            wrongType (Char "") e
 
 
 {-| Decode an EDN string into an Elm `String`.

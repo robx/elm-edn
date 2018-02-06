@@ -186,38 +186,20 @@ string =
         |. P.symbol "\""
 
 
-{-| unicodeChar translates a four character hexadecimal string
-to the character for the corresponding UTF-16 code point
--}
-unicodeChar : String -> Char
-unicodeChar u =
-    Debug.crash "not implemented"
-
-
 char : Parser Element
 char =
-    let
-        stringToChar s =
-            case String.uncons s of
-                Just ( c, "" ) ->
-                    c
-
-                _ ->
-                    Debug.crash "bad single-char string"
-    in
     P.succeed Char
         |. P.symbol "\\"
-        |= P.oneOf
-            [ P.succeed '\n' |. P.keyword "newline"
-            , P.succeed '\x0D' |. P.keyword "return"
-            , P.succeed ' ' |. P.keyword "space"
-            , P.succeed '\t' |. P.keyword "tab"
-            , P.succeed unicodeChar
-                |. P.symbol "u"
-                |= P.keep (P.Exactly 4) Char.isHexDigit
-            , P.succeed stringToChar
-                |= P.keep (P.Exactly 1) (always True)
-            ]
+        |= P.source
+            (P.oneOf
+                [ P.keyword "newline"
+                , P.keyword "return"
+                , P.keyword "space"
+                , P.keyword "tab"
+                , P.symbol "u" |. P.ignore (P.Exactly 4) Char.isHexDigit
+                , P.ignore (P.Exactly 1) (always True)
+                ]
+            )
         |. sep
 
 
