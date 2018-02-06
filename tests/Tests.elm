@@ -100,6 +100,17 @@ suite =
                             => Keyword "a-keyword-with-dashes"
                         ]
                         element
+            , test "chars" <|
+                \_ ->
+                    parse
+                        [ """\\a"""
+                            => Char 'a'
+                        , """\\\\"""
+                            => Char '\\'
+                        , """\\newline"""
+                            => Char '\n'
+                        ]
+                        element
             , fuzz int "parses a random integer" <|
                 \i ->
                     Expect.equal
