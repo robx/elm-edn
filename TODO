@@ -6,11 +6,7 @@
 * vector vs array, list to array? array to list?
 * index from array or list
 
-* symbols and /
-
 * multiple elements?
-
-* generates invalid EDN happily (symbols, particularly)
 
 * upstream Parser
 
