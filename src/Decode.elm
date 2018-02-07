@@ -2,12 +2,14 @@ module Decode
     exposing
         ( Decoder
         , andThen
+        , at
         , bool
         , decodeString
         , dict
         , fail
         , field
         , float
+        , index
         , int
         , keyValuePairs
         , keyword
@@ -33,7 +35,10 @@ module Decode
         , vector
         )
 
-{-| Element decoders
+{-| Build decoders for [EDN](https://github.com/edn-format/edn) elements.
+
+You can mostly just use this the way you use <Decode.Json>
+to decode JSON values.
 
 
 # Primitives
@@ -46,12 +51,14 @@ module Decode
 # Data Structures
 
 @docs optional, list, vector, set, keyValuePairs, dict
+@docs index
 
 
 # Object Primitives
 
 @docs field, optionalField
 @docs tagged
+@docs at
 
 
 # Inconsistent Structure
@@ -118,7 +125,7 @@ objects with many fields:
             (field "y" float)
 
 
-    -- decodeString point """{:x 3, :y 4}""" == Ok { x = 3, y = 4 }
+    -- decodeString point """{:x 3.0, :y 4.0}""" == Ok { x = 3, y = 4 }
 
 It tries each individual decoder and puts the result together with the `Point`
 constructor.
@@ -276,6 +283,11 @@ char e =
 
 
 {-| Decode an EDN string into an Elm `String`.
+
+    decodeString string "\"12345\"" == Ok "12345"
+    decodeString string "\"😞\""    == Ok "😞"
+    decodeString string "12345"     == Err _
+
 -}
 string : Decoder String
 string e =
@@ -288,6 +300,10 @@ string e =
 
 
 {-| Decode an EDN integer into an Elm `Int`.
+
+    decodeString int "12345" == Ok 12345
+    decodeString int "1.0"   == Err _
+
 -}
 int : Decoder Int
 int e =
@@ -300,6 +316,11 @@ int e =
 
 
 {-| Decode an EDN floating point number into an Elm `Float`
+
+     decodeString float "1.1" == Ok 1.1
+     decodeString float "1E1" == Ok 10.0
+     decodeString float "2"   == Err _
+
 -}
 float : Decoder Float
 float e =
@@ -312,6 +333,11 @@ float e =
 
 
 {-| Decode an EDN nil value.
+
+     decodeString keyword "nil"  == Ok ()
+     decodeString keyword "yo"   == Err _
+     decodeString keyword ":nil" == Err _
+
 -}
 nil : Decoder ()
 nil e =
@@ -324,6 +350,10 @@ nil e =
 
 
 {-| Decode an EDN symbol into an Elm `String`.
+
+     decodeString keyword "yo"     == Ok "yo"
+     decodeString keyword ":black" == Err _
+
 -}
 symbol : Decoder String
 symbol e =
@@ -336,6 +366,11 @@ symbol e =
 
 
 {-| Decode an EDN keyword into an Elm `String`.
+
+     decodeString keyword ":black" == Ok "black"
+     decodeString keyword "yo"     == Err _
+     decodeString keyword ":true"  == Ok "true"
+
 -}
 keyword : Decoder String
 keyword e =
@@ -348,6 +383,12 @@ keyword e =
 
 
 {-| Decode an EDN boolean into an Elm `Bool`.
+
+     decodeString bool "true"   == Ok True
+     decodeString bool "false"  == Ok False
+     decodeString bool "nil"    == Err _
+     decodeString bool "(true)" == Err _
+
 -}
 bool : Decoder Bool
 bool e =
@@ -370,6 +411,10 @@ seq d l =
 
 
 {-| Decode an EDN nil value into `Nothing`, or any other value into an Elm value.
+
+     decodeString (optional bool) "true" == Ok (Just True)
+     decodeString (optional bool) "nil"  == Ok Nothing
+
 -}
 optional : Decoder a -> Decoder (Maybe a)
 optional d =
@@ -380,6 +425,16 @@ optional d =
 
 
 {-| Decode an EDN list into an Elm `List`.
+
+    decodeString
+        (list int)
+        "(1 2 3 4 5)"
+            == Ok [1, 2, 3, 4, 5]
+    decodeString
+        (list (list string))
+        """(() ("hello" "world") ())"""
+            == Ok [[], ["hello", "world"], []]
+
 -}
 list : Decoder a -> Decoder (List a)
 list d e =
@@ -392,6 +447,10 @@ list d e =
 
 
 {-| Decode an EDN vector into an Elm `List`.
+
+    decodeString (vector int) "[2 2]"
+        == Ok [2, 2]
+
 -}
 vector : Decoder a -> Decoder (List a)
 vector d e =
@@ -404,6 +463,10 @@ vector d e =
 
 
 {-| Decode an EDN set into an Elm `Set`.
+
+    decodeString (set int) "#{1, 2}"
+        == Ok (Set.fromList [1, 2])
+
 -}
 set : Decoder comparable -> Decoder (Set.Set comparable)
 set d e =
@@ -415,7 +478,19 @@ set d e =
             wrongType (Set []) e
 
 
-{-| Decode an EDN map into an Elm `List` of pairs.
+{-| Decode an EDN map into an Elm `List` of pairs. If the keys are
+simple (strings, integers, keywords, ...), consider using
+[`dict`](dict) or [`field`](field) instead.
+
+    decodeString
+        (map (list int) string)
+        """{(1 2) "onetwo"
+            (2 1) "twoone"
+            ()    "three"}"""
+        == Ok [ ([1, 2], "onetwo")
+              , ([2, 1], "twoone")
+              , ([], "three") ]
+
 -}
 keyValuePairs : Decoder key -> Decoder value -> Decoder (List ( key, value ))
 keyValuePairs key value e =
@@ -442,6 +517,16 @@ keyValuePairs key value e =
 
 
 {-| Decode an EDN map into an Elm `Dict`.
+
+    decodeString
+        (map int string)
+        """{12 "onetwo", 21 "twoone", 3 "three"}"""
+        == Ok <| Dict.fromList
+            [ (12, "onetwo")
+            , (21, "twoone")
+            , (3,  "three")
+            ]
+
 -}
 dict : Decoder comparable -> Decoder value -> Decoder (Dict.Dict comparable value)
 dict key value =
@@ -464,6 +549,17 @@ object e =
 
 
 {-| Decode an optional EDN map field.
+
+    decodeString (field "twitter" string)
+        """{:name "Alice", :twitter "@alice"}"""
+        == Ok (Just "@alice")
+    decodeString (field "twitter" string)
+        """{:name "Bob", :icq 12345678}"""
+        == Ok Nothing
+    decodeString (field "twitter" string)
+        """{:name "Eve", :twitter nil}"""
+        == Err _
+
 -}
 optionalField : String -> Decoder a -> Decoder (Maybe a)
 optionalField f d =
@@ -480,6 +576,21 @@ optionalField f d =
 
 
 {-| Decode an EDN map field.
+
+    decodeString (field "twitter" string)
+        """{:name "Alice", :twitter "@alice"}"""
+        == Ok "@alice"
+    decodeString (field "twitter" string)
+        """{:name "Bob", :icq 12345678}"""
+        == Err "field not found: twitter"
+
+    decodeString (field "twitter" optional string)
+        """{:name "Alice", :twitter "@alice"}"""
+        == Ok (Just "@alice")
+    decodeString (field "twitter" (optional string)
+        """{:name "Eve", :twitter nil}"""
+        == Ok Nothing
+
 -}
 field : String -> Decoder a -> Decoder a
 field f d =
@@ -496,6 +607,16 @@ field f d =
 
 
 {-| Decode a nested object, requiring certain fields.
+
+    decodeString (at ["end", "x"] float)
+        """{:start {:x 1.0, :y 1.5}
+            :end   {:x 0.5, :y 0.334}}"""
+        == Ok 0.5
+    decodeString (at ["start", "z"] float)
+        """{:start {:x 1.0, :y 1.5}
+            :end   {:x 0.5, :y 0.334}}"""
+        == Err _
+
 -}
 at : List String -> Decoder a -> Decoder a
 at path d =
@@ -507,24 +628,51 @@ at path d =
             d
 
 
-{-| Decode an EDN list, requiring a particular index.
+{-| Decode an EDN vector, requiring a particular index.
+
+    decodeString (index 1 int)
+        """["one" 2 3.0 nil]"""
+            == Ok 2
+    decodeString (index 1 int)
+        "[1]"
+            == Err _
+
+This will fail on EDN lists.
+
+    decodeString (index 1 int)
+        "(1 2 3)"
+            == Err _
+
 -}
 index : Int -> Decoder a -> Decoder a
 index i d e =
     case e of
-        List l ->
-            case l |> List.drop i |> List.head of
+        Vector v ->
+            case v |> List.drop i |> List.head of
                 Just el ->
                     d el
 
                 Nothing ->
-                    Err <| "index " ++ toString i ++ " not found in list of length " ++ toString (List.length l)
+                    Err <| "index " ++ toString i ++ " not found in vector of length " ++ toString (List.length v)
 
         _ ->
-            wrongType (List []) e
+            wrongType (Vector []) e
 
 
 {-| Decode an element based on its tag.
+
+    type ID
+        = UserID Int
+        | Email String
+
+    decodeString
+        (list <| tagged
+            [ ( "my/uid",   map UserID int   )
+            , ( "my/email", map Email string )
+            ]
+        ) """(#my/uid 1, #my/email "alice@example.com", #my/uid 334)"""
+            == [ UserID 1, Email "alice@example.com", UserID 334 ]
+
 -}
 tagged : List ( String, Decoder a ) -> Decoder a
 tagged decoders e =
@@ -543,6 +691,19 @@ tagged decoders e =
 
 {-| Try a bunch of different decoders, one after the other. The
 result is the value of the first successful decoder.
+
+    type ID
+        = UserID Int
+        | Email String
+
+    decodeString
+        (list <| oneOf
+            [ map UserID int
+            , map Email string
+            ]
+        ) """(1, "alice@example.com", 334)"""
+            == [ UserID 1, Email "alice@example.com", UserID 334 ]
+
 -}
 oneOf : List (Decoder a) -> Decoder a
 oneOf decoders e =
