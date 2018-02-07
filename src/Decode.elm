@@ -670,9 +670,12 @@ index i d e =
         (list <| tagged
             [ ( "my/uid",   map UserID int   )
             , ( "my/email", map Email string )
-            ]
-        ) """(#my/uid 1, #my/email "alice@example.com", #my/uid 334)"""
-            == [ UserID 1, Email "alice@example.com", UserID 334 ]
+            ])
+        """(#my/uid 1, #my/email "alice@example.com", #my/uid 334)"""
+            == [ UserID 1
+               , Email "alice@example.com"
+               , UserID 334
+               ]
 
 -}
 tagged : List ( String, Decoder a ) -> Decoder a
@@ -701,9 +704,11 @@ result is the value of the first successful decoder.
         (list <| oneOf
             [ map UserID int
             , map Email string
-            ]
-        ) """(1, "alice@example.com", 334)"""
-            == [ UserID 1, Email "alice@example.com", UserID 334 ]
+            ])
+        """(1, "alice@example.com", 334)"""
+            == [ UserID 1
+               , Email "alice@example.com"
+               , UserID 334 ]
 
 -}
 oneOf : List (Decoder a) -> Decoder a
