@@ -2,8 +2,7 @@ module Decode
     exposing
         ( Decoder
         , andThen
-        , anyList
-        , array
+        , vector
         , bool
         , char
         , decodeString
@@ -47,7 +46,7 @@ module Decode
 
 # Data Structures
 
-@docs optional, list, array, anyList, set, keyValuePairs, dict
+@docs optional, list, vector, set, keyValuePairs, dict
 
 
 # Object Primitives
@@ -77,7 +76,6 @@ module Decode
 
 -}
 
-import Array
 import Dict
 import Parse
 import Parser
@@ -394,31 +392,16 @@ list d e =
             wrongType (List []) e
 
 
-{-| Decode an EDN vector into an Elm `Array`.
+{-| Decode an EDN vector into an Elm `List`.
 -}
-array : Decoder a -> Decoder (Array.Array a)
-array d e =
+vector : Decoder a -> Decoder (List a)
+vector d e =
     case e of
-        Vector v ->
-            seq d v |> Result.map Array.fromList
-
-        _ ->
-            wrongType (Vector []) e
-
-
-{-| Decode an EDN list or vector into an Elm `List`.
--}
-anyList : Decoder a -> Decoder (List a)
-anyList d e =
-    case e of
-        List l ->
-            seq d l
-
         Vector v ->
             seq d v
 
         _ ->
-            wrongTypeMany [ List [], Vector [] ] e
+            wrongType (Vector []) e
 
 
 {-| Decode an EDN set into an Elm `Set`.
