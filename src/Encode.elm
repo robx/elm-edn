@@ -26,7 +26,7 @@ module Encode
 {-| Encode Elm values to EDN elements.
 
 You can mostly just use this the way you use
-<a href="http://package.elm-lang.org/packages/elm-lang/core/latest/Json-Decode">Json.Encode</a>
+<a href="http://package.elm-lang.org/packages/elm-lang/core/latest/Json-Encode">Json.Encode</a>
 to encode JSON values.
 
 

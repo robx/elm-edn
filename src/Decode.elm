@@ -37,7 +37,8 @@ module Decode
 
 {-| Build decoders for [EDN](https://github.com/edn-format/edn) elements.
 
-You can mostly just use this the way you use <Decode.Json>
+You can mostly just use this the way you use
+<a href="http://package.elm-lang.org/packages/elm-lang/core/latest/Json-Decode">Json.Decode</a>
 to decode JSON values.
 
 
