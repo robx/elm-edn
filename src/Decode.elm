@@ -2,9 +2,7 @@ module Decode
     exposing
         ( Decoder
         , andThen
-        , vector
         , bool
-        , char
         , decodeString
         , dict
         , fail
@@ -32,6 +30,7 @@ module Decode
         , succeed
         , symbol
         , tagged
+        , vector
         )
 
 {-| Element decoders
@@ -41,7 +40,7 @@ module Decode
 
 @docs Decoder
 @docs bool, int, float, string
-@docs char, nil, symbol, keyword
+@docs nil, symbol, keyword
 
 
 # Data Structures
