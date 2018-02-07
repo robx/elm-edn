@@ -252,7 +252,16 @@ suite =
             , test "numbers" <|
                 \_ ->
                     parse
-                        [ "1" => Int 1
+                        [ "1." => Float 1.0
+                        , "1.1" => Float 1.1
+                        , "-1.1" => Float -1.1
+                        , "1" => Int 1
+                        , "1E1" => Float 10.0
+                        , "1e1" => Float 10.0
+                        , "1e-1" => Float 0.1
+                        , "-1e-2" => Float -0.01
+                        , "3.1415926" => Float 3.1415926
+                        , "1.00000" => Float 1.0
                         , "-55" => Int -55
                         , "1.234E5M" => BigFloat { sign = "+", digits = "1" } "234" { sign = "+", digits = "5" }
                         , "0.0" => Float 0
