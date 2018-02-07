@@ -23,7 +23,11 @@ module Encode
         , toTag
         )
 
-{-| Encoding EDN elements
+{-| Encode Elm values to EDN elements.
+
+You can mostly just use this the way you use
+<a href="http://package.elm-lang.org/packages/elm-lang/core/latest/Json-Decode">Json.Encode</a>
+to encode JSON values.
 
 
 # Basics
@@ -212,6 +216,10 @@ symbol =
 
 
 {-| Make an EDN keyword from a `Keyword`.
+
+    encode <| keyword  <| mustKeyword "nil"
+        == ":nil"
+
 -}
 keyword : Keyword -> Element
 keyword =
@@ -241,6 +249,10 @@ list =
 
 {-| Make an EDN object (map from keyword to element) from a list of
 pairs of field name symbol and field value.
+
+    encode (object [ ("x", float 1.5), ("y", float 0.0) ])
+        == "{:x 1.5, :y 0.0}"
+
 -}
 object : List ( Keyword, Element ) -> Element
 object o =
@@ -259,6 +271,10 @@ mustObject =
 
 
 {-| Encode an EDN element to EDN.
+
+    encode (list [int 5, string "hello"])
+        == """(5 "hello")"""
+
 -}
 encode : Element -> String
 encode e =
