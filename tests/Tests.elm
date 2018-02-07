@@ -325,5 +325,10 @@ suite =
                     Expect.equal
                         (Encode.toSymbol "a mess cmd")
                         Nothing
+            , test "no nil/true/false" <|
+                \_ ->
+                    Expect.equal
+                        (List.map Encode.toSymbol [ "nil", "true", "false" ])
+                        [ Nothing, Nothing, Nothing ]
             ]
         ]

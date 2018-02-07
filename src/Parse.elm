@@ -1,4 +1,4 @@
-module Parse exposing (onlyElement, onlyElements, plainSymbol)
+module Parse exposing (isSymbol, onlyElement, onlyElements, plainSymbol)
 
 {-| Parsing EDN
 
@@ -311,26 +311,41 @@ plainSymbol =
         ]
 
 
+fromSymbol : String -> Element
+fromSymbol s =
+    case s of
+        "true" ->
+            Bool True
+
+        "false" ->
+            Bool False
+
+        "nil" ->
+            Nil
+
+        _ ->
+            Symbol s
+
+
+{-| Determines whether the argument is a real symbol,
+as opposed to `nil`, `true`, `false`, given it is syntactically
+a symbol
+-}
+isSymbol : String -> Bool
+isSymbol s =
+    case fromSymbol s of
+        Symbol _ ->
+            True
+
+        _ ->
+            False
+
+
 {-| symbols parses EDN symbols and true/false/nil
 -}
 symbols : Parser Element
 symbols =
-    let
-        f s =
-            case s of
-                "true" ->
-                    Bool True
-
-                "false" ->
-                    Bool False
-
-                "nil" ->
-                    Nil
-
-                _ ->
-                    Symbol s
-    in
-    P.succeed f
+    P.succeed fromSymbol
         |= plainSymbol
         |. sep
 
