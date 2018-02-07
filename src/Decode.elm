@@ -481,7 +481,7 @@ set d e =
 
 {-| Decode an EDN map into an Elm `List` of pairs. If the keys are
 simple (strings, integers, keywords, ...), consider using
-[`dict`](dict) or [`field`](field) instead.
+[`dict`](#dict) or [`field`](#field) instead.
 
     decodeString
         (map (list int) string)
