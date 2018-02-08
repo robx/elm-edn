@@ -1,4 +1,4 @@
-.PHONY: all build format
+.PHONY: all build format test verify-examples
 
 all: build
 
@@ -10,3 +10,6 @@ format:
 
 test:
 	elm-test
+
+verify-examples:
+	elm-verify-examples

@@ -125,8 +125,8 @@ objects with many fields:
             (field "x" float)
             (field "y" float)
 
-
-    -- decodeString point """{:x 3.0, :y 4.0}""" == Ok { x = 3, y = 4 }
+    decodeString point """{:x 3.0, :y 4.0}"""
+    --> Ok { x = 3, y = 4 }
 
 It tries each individual decoder and puts the result together with the `Point`
 constructor.
@@ -285,9 +285,9 @@ char e =
 
 {-| Decode an EDN string into an Elm `String`.
 
-    decodeString string "\"12345\"" == Ok "12345"
-    decodeString string "\"😞\""    == Ok "😞"
-    decodeString string "12345"     == Err _
+    decodeString string "\"12345\"" --> Ok "12345"
+    decodeString string "\"😞\""    --> Ok "😞"
+    decodeString string "12345"     --> Err "expected a string but found an integer"
 
 -}
 string : Decoder String
@@ -302,8 +302,8 @@ string e =
 
 {-| Decode an EDN integer into an Elm `Int`.
 
-    decodeString int "12345" == Ok 12345
-    decodeString int "1.0"   == Err _
+    decodeString int "12345" --> Ok 12345
+    decodeString int "1.0"   --> Err "expected an integer but found a floating point number"
 
 -}
 int : Decoder Int
@@ -318,9 +318,10 @@ int e =
 
 {-| Decode an EDN floating point number into an Elm `Float`
 
-     decodeString float "1.1" == Ok 1.1
-     decodeString float "1E1" == Ok 10.0
-     decodeString float "2"   == Err _
+     decodeString float "1.1" --> Ok 1.1
+     decodeString float "1E1" --> Ok 10.0
+     decodeString float "2"
+     --> Err "expected a floating point number but found an integer"
 
 -}
 float : Decoder Float
@@ -335,9 +336,9 @@ float e =
 
 {-| Decode an EDN nil value.
 
-     decodeString keyword "nil"  == Ok ()
-     decodeString keyword "yo"   == Err _
-     decodeString keyword ":nil" == Err _
+     decodeString keyword ":nil" --> Ok "nil"
+     decodeString keyword "yo"   --> Err "expected a keyword but found a symbol"
+     decodeString keyword "nil"  --> Err "expected a keyword but found `nil`"
 
 -}
 nil : Decoder ()
@@ -352,8 +353,8 @@ nil e =
 
 {-| Decode an EDN symbol into an Elm `String`.
 
-     decodeString keyword "yo"     == Ok "yo"
-     decodeString keyword ":black" == Err _
+     decodeString symbol "yo"     --> Ok "yo"
+     decodeString symbol ":black" --> Err "expected a symbol but found a keyword"
 
 -}
 symbol : Decoder String
@@ -368,9 +369,9 @@ symbol e =
 
 {-| Decode an EDN keyword into an Elm `String`.
 
-     decodeString keyword ":black" == Ok "black"
-     decodeString keyword "yo"     == Err _
-     decodeString keyword ":true"  == Ok "true"
+     decodeString keyword ":black" --> Ok "black"
+     decodeString keyword "yo"     --> Err "expected a keyword but found a symbol"
+     decodeString keyword ":true"  --> Ok "true"
 
 -}
 keyword : Decoder String
@@ -385,10 +386,10 @@ keyword e =
 
 {-| Decode an EDN boolean into an Elm `Bool`.
 
-     decodeString bool "true"   == Ok True
-     decodeString bool "false"  == Ok False
-     decodeString bool "nil"    == Err _
-     decodeString bool "(true)" == Err _
+     decodeString bool "true"   --> Ok True
+     decodeString bool "false"  --> Ok False
+     decodeString bool "nil"    --> Err "expected a boolean but found `nil`"
+     decodeString bool "(true)" --> Err "expected a boolean but found a list"
 
 -}
 bool : Decoder Bool
@@ -413,8 +414,8 @@ seq d l =
 
 {-| Decode an EDN nil value into `Nothing`, or any other value into an Elm value.
 
-     decodeString (optional bool) "true" == Ok (Just True)
-     decodeString (optional bool) "nil"  == Ok Nothing
+     decodeString (optional bool) "true" --> Ok (Just True)
+     decodeString (optional bool) "nil"  --> Ok Nothing
 
 -}
 optional : Decoder a -> Decoder (Maybe a)
@@ -430,11 +431,12 @@ optional d =
     decodeString
         (list int)
         "(1 2 3 4 5)"
-            == Ok [1, 2, 3, 4, 5]
+    --> Ok [1, 2, 3, 4, 5]
+
     decodeString
         (list (list string))
         """(() ("hello" "world") ())"""
-            == Ok [[], ["hello", "world"], []]
+    --> Ok [[], ["hello", "world"], []]
 
 -}
 list : Decoder a -> Decoder (List a)
@@ -450,7 +452,7 @@ list d e =
 {-| Decode an EDN vector into an Elm `List`.
 
     decodeString (vector int) "[2 2]"
-        == Ok [2, 2]
+    --> Ok [2, 2]
 
 -}
 vector : Decoder a -> Decoder (List a)
@@ -465,8 +467,10 @@ vector d e =
 
 {-| Decode an EDN set into an Elm `Set`.
 
+    import Set
+
     decodeString (set int) "#{1, 2}"
-        == Ok (Set.fromList [1, 2])
+    --> Ok (Set.fromList [1, 2])
 
 -}
 set : Decoder comparable -> Decoder (Set.Set comparable)
@@ -484,13 +488,14 @@ simple (strings, integers, keywords, ...), consider using
 [`dict`](#dict) or [`field`](#field) instead.
 
     decodeString
-        (map (list int) string)
+        (keyValuePairs (list int) string)
         """{(1 2) "onetwo"
             (2 1) "twoone"
             ()    "three"}"""
-        == Ok [ ([1, 2], "onetwo")
-              , ([2, 1], "twoone")
-              , ([], "three") ]
+    --> Ok [ ([1, 2], "onetwo")
+    -->    , ([2, 1], "twoone")
+    -->    , ([], "three")
+    -->    ]
 
 -}
 keyValuePairs : Decoder key -> Decoder value -> Decoder (List ( key, value ))
@@ -519,14 +524,16 @@ keyValuePairs key value e =
 
 {-| Decode an EDN map into an Elm `Dict`.
 
+    import Dict
+
     decodeString
-        (map int string)
+        (dict int string)
         """{12 "onetwo", 21 "twoone", 3 "three"}"""
-        == Ok <| Dict.fromList
-            [ (12, "onetwo")
-            , (21, "twoone")
-            , (3,  "three")
-            ]
+    --> Ok <| Dict.fromList
+    -->     [ (12, "onetwo")
+    -->     , (21, "twoone")
+    -->     , (3,  "three")
+    -->     ]
 
 -}
 dict : Decoder comparable -> Decoder value -> Decoder (Dict.Dict comparable value)
@@ -551,15 +558,17 @@ object e =
 
 {-| Decode an optional EDN map field.
 
-    decodeString (field "twitter" string)
+    decodeString (optionalField "twitter" string)
         """{:name "Alice", :twitter "@alice"}"""
-        == Ok (Just "@alice")
-    decodeString (field "twitter" string)
+    --> Ok (Just "@alice")
+
+    decodeString (optionalField "twitter" string)
         """{:name "Bob", :icq 12345678}"""
-        == Ok Nothing
-    decodeString (field "twitter" string)
+    --> Ok Nothing
+
+    decodeString (optionalField "twitter" string)
         """{:name "Eve", :twitter nil}"""
-        == Err _
+    --> Err "expected a string but found `nil`"
 
 -}
 optionalField : String -> Decoder a -> Decoder (Maybe a)
@@ -580,17 +589,19 @@ optionalField f d =
 
     decodeString (field "twitter" string)
         """{:name "Alice", :twitter "@alice"}"""
-        == Ok "@alice"
+    --> Ok "@alice"
+
     decodeString (field "twitter" string)
         """{:name "Bob", :icq 12345678}"""
-        == Err "field not found: twitter"
+    --> Err "field not found: twitter"
 
-    decodeString (field "twitter" optional string)
+    decodeString (field "twitter" (optional string))
         """{:name "Alice", :twitter "@alice"}"""
-        == Ok (Just "@alice")
-    decodeString (field "twitter" (optional string)
+    --> Ok (Just "@alice")
+
+    decodeString (field "twitter" (optional string))
         """{:name "Eve", :twitter nil}"""
-        == Ok Nothing
+    --> Ok Nothing
 
 -}
 field : String -> Decoder a -> Decoder a
@@ -612,11 +623,12 @@ field f d =
     decodeString (at ["end", "x"] float)
         """{:start {:x 1.0, :y 1.5}
             :end   {:x 0.5, :y 0.334}}"""
-        == Ok 0.5
+    --> Ok 0.5
+
     decodeString (at ["start", "z"] float)
         """{:start {:x 1.0, :y 1.5}
             :end   {:x 0.5, :y 0.334}}"""
-        == Err _
+    --> Err "field not found: z"
 
 -}
 at : List String -> Decoder a -> Decoder a
@@ -633,16 +645,16 @@ at path d =
 
     decodeString (index 1 int)
         """["one" 2 3.0 nil]"""
-            == Ok 2
+    --> Ok 2
     decodeString (index 1 int)
         "[1]"
-            == Err _
+    --> Err "index 1 not found in vector of length 1"
 
 This will fail on EDN lists.
 
     decodeString (index 1 int)
         "(1 2 3)"
-            == Err _
+    --> Err "expected a vector but found a list"
 
 -}
 index : Int -> Decoder a -> Decoder a
@@ -672,10 +684,11 @@ index i d e =
             , ( "my/email", map Email string )
             ])
         """(#my/uid 1, #my/email "alice@example.com", #my/uid 334)"""
-            == [ UserID 1
-               , Email "alice@example.com"
-               , UserID 334
-               ]
+    --> Ok <|
+    -->     [ UserID 1
+    -->     , Email "alice@example.com"
+    -->     , UserID 334
+    -->     ]
 
 -}
 tagged : List ( String, Decoder a ) -> Decoder a
@@ -706,9 +719,11 @@ result is the value of the first successful decoder.
             , map Email string
             ])
         """(1, "alice@example.com", 334)"""
-            == [ UserID 1
-               , Email "alice@example.com"
-               , UserID 334 ]
+    --> Ok
+    -->     [ UserID 1
+    -->     , Email "alice@example.com"
+    -->     , UserID 334
+    -->     ]
 
 -}
 oneOf : List (Decoder a) -> Decoder a
