@@ -288,6 +288,12 @@ encode e =
         Types.Int x ->
             toString x
 
+        Types.Float x ->
+            if toFloat (truncate x) == x then
+                toString x ++ ".0"
+            else
+                toString x
+
         Types.String s ->
             Json.encode 0 (Json.string s)
 
