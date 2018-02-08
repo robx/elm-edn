@@ -218,7 +218,7 @@ symbol =
 {-| Make an EDN keyword from a `Keyword`.
 
     encode <| keyword  <| mustKeyword "nil"
-        == ":nil"
+    --> ":nil"
 
 -}
 keyword : Keyword -> Element
@@ -250,9 +250,11 @@ list =
 {-| Make an EDN object (map from keyword to element) from a list of
 pairs of field name symbol and field value.
 
-    encode (object [ ("x", float 1.5), ("y", float 0.0) ])
-        == "{:x 1.5, :y 0.0}"
-
+    case (toKeyword "x", toKeyword "y") of
+        (Just x, Just y)
+            -> encode (object [ (x, float 1.5), (y, float 0.0) ])
+        _   -> ""
+    --> "{:x 1.5, :y 0.0}"
 -}
 object : List ( Keyword, Element ) -> Element
 object o =
@@ -264,6 +266,10 @@ object o =
 {-| Make an EDN object (map from keyword to element) from a list of
 pairs of field name string and field value. This will crash if any of
 the field names are not valid EDN symbols.
+
+    encode (mustObject [ ("x", float 1.5), ("y", float 0.0) ])
+    --> "{:x 1.5, :y 0.0}"
+
 -}
 mustObject : List ( String, Element ) -> Element
 mustObject =
@@ -273,7 +279,7 @@ mustObject =
 {-| Encode an EDN element to EDN.
 
     encode (list [int 5, string "hello"])
-        == """(5 "hello")"""
+    --> """(5 "hello")"""
 
 -}
 encode : Element -> String
