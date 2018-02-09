@@ -255,6 +255,7 @@ pairs of field name symbol and field value.
             -> encode (object [ (x, float 1.5), (y, float 0.0) ])
         _   -> ""
     --> "{:x 1.5, :y 0.0}"
+
 -}
 object : List ( Keyword, Element ) -> Element
 object o =
@@ -291,6 +292,7 @@ encode e =
         Types.Float x ->
             if toFloat (truncate x) == x then
                 toString x ++ ".0"
+
             else
                 toString x
 
