@@ -98,6 +98,12 @@ suite =
                             => Set [ Symbol "this", Symbol "is", Symbol "a", Symbol "set" ]
                         , """:a-keyword-with-dashes"""
                             => Keyword "a-keyword-with-dashes"
+                        , """ "some;line%%%noise" """
+                            => String "some;line%%%noise"
+                        , """ "me & you" """
+                            => String "me & you"
+                        , """ "me & you \\u0026 them" """
+                            => String "me & you & them"
                         ]
                         element
             , test "chars" <|
