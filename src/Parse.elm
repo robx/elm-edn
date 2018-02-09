@@ -15,6 +15,7 @@ import List
 import Parser as P exposing ((|.), (|=), Parser)
 import String
 import Types exposing (..)
+import Unicode
 
 
 seq : String -> String -> Parser (List Element)
@@ -153,18 +154,6 @@ spaceSep =
     P.ignore P.oneOrMore isSpace
 
 
-{-| Character for an escape of the form \uXXXX
--}
-unicode : Int -> Char
-unicode cp =
-    case cp of
-        0x26 ->
-            '&'
-
-        _ ->
-            '�'
-
-
 unicodeEscape : Parser Char
 unicodeEscape =
     let
@@ -229,7 +218,7 @@ unicodeEscape =
                 Nothing ->
                     0
     in
-    P.succeed (unicode << hexrev << String.reverse)
+    P.succeed (Unicode.unicode << hexrev << String.reverse)
         |. P.symbol "u"
         |= P.keep (P.Exactly 4) Char.isHexDigit
 
