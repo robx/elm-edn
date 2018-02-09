@@ -15,6 +15,7 @@ import List
 import Parser as P exposing ((|.), (|=), Parser)
 import String
 import Types exposing (..)
+import Unicode
 
 
 seq : String -> String -> Parser (List Element)
@@ -153,6 +154,75 @@ spaceSep =
     P.ignore P.oneOrMore isSpace
 
 
+unicodeEscape : Parser Char
+unicodeEscape =
+    let
+        onehex c =
+            case Char.toLower c of
+                '0' ->
+                    0
+
+                '1' ->
+                    1
+
+                '2' ->
+                    2
+
+                '3' ->
+                    3
+
+                '4' ->
+                    4
+
+                '5' ->
+                    5
+
+                '6' ->
+                    6
+
+                '7' ->
+                    7
+
+                '8' ->
+                    8
+
+                '9' ->
+                    9
+
+                'a' ->
+                    10
+
+                'b' ->
+                    11
+
+                'c' ->
+                    12
+
+                'd' ->
+                    13
+
+                'e' ->
+                    14
+
+                'f' ->
+                    15
+
+                _ ->
+                    0
+
+        hexrev s =
+            case String.uncons s of
+                Just ( c, rest ) ->
+                    onehex c + 16 * hexrev rest
+
+                Nothing ->
+                    0
+    in
+    P.succeed (Unicode.unicode << hexrev << String.reverse)
+        |. P.symbol "u"
+        |= P.keep (P.Exactly 4) Char.isHexDigit
+
+
 {-| Parses an EDN string
 -}
 string : Parser Element
@@ -175,9 +245,14 @@ string =
         part =
             P.oneOf
                 [ P.keep P.oneOrMore (\c -> c /= '\\' && c /= '"')
-                , P.succeed esc
+                , P.succeed identity
                     |. P.symbol "\\"
-                    |= P.keep (P.Exactly 1) (always True)
+                    |= P.oneOf
+                        [ P.succeed String.fromChar
+                            |= unicodeEscape
+                        , P.succeed esc
+                            |= P.keep (P.Exactly 1) (always True)
+                        ]
                 ]
     in
     P.succeed (String << String.concat)
