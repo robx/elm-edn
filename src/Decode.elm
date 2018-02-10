@@ -32,6 +32,7 @@ module Decode
         , string
         , succeed
         , symbol
+        , tag
         , tagged
         , vector
         )
@@ -81,6 +82,11 @@ to decode JSON values.
 # Fancy Decoding
 
 @docs lazy, succeed, fail, andThen
+
+
+# Custom Types
+
+@docs tag
 
 -}
 
@@ -676,6 +682,30 @@ index i d e =
 
         _ ->
             wrongType (Vector []) e
+
+
+{-| Decode a tagged element.
+
+    decodeString (tag "my/tag" int) "#my/tag 55"
+    --> Ok 55
+    decodeString (tag "my/tag" int) "#your/tag 55"
+    --> Err "expected tag `my/tag` but found `your/tag`"
+    decodeString (tag "my/tag" int) "55"
+    --> Err "expected a tagged element but found an integer"
+
+-}
+tag : String -> Decoder a -> Decoder a
+tag t d e =
+    case e of
+        Tagged tt f ->
+            if t == tt then
+                d f
+
+            else
+                Err <| "expected tag `" ++ t ++ "` but found `" ++ tt ++ "`"
+
+        _ ->
+            wrongType (Tagged "" Nil) e
 
 
 {-| Decode an element based on its tag.
