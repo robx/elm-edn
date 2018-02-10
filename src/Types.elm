@@ -15,7 +15,7 @@ type Element
     = Nil
     | Bool Bool
     | String String
-    | Char String
+    | Char Char
     | Symbol String
     | Keyword String
     | Int Int

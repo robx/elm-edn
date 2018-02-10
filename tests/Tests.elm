@@ -110,11 +110,13 @@ suite =
                 \_ ->
                     parse
                         [ """\\a"""
-                            => Char "a"
+                            => Char 'a'
                         , """\\\\"""
-                            => Char "\\"
+                            => Char '\\'
                         , """\\newline"""
-                            => Char "newline"
+                            => Char '\n'
+                        , """\\u0026"""
+                            => Char '&'
                         ]
                         element
             , fuzz int "parses a random integer" <|

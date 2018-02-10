@@ -4,6 +4,7 @@ module Decode
         , andThen
         , at
         , bool
+        , char
         , decodeString
         , dict
         , fail
@@ -270,17 +271,22 @@ wrongTypeMany want have =
             ++ desc have
 
 
-{-| Decode an EDN character into an Elm `String` of the raw
-EDN character element.
+{-| Decode an EDN character into an Elm `Char`.
+
+    decodeString char "\\a"       --> Ok 'a'
+    decodeString char "\\newline" --> Ok '\n'
+    decodeString char "\\\\"      --> Ok '\\'
+    decodeString char "\\u0026"   --> Ok '&'
+
 -}
-char : Decoder String
+char : Decoder Char
 char e =
     case e of
         Char c ->
             Ok c
 
         _ ->
-            wrongType (Char "") e
+            wrongType (Char ' ') e
 
 
 {-| Decode an EDN string into an Elm `String`.
