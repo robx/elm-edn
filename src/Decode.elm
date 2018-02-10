@@ -736,7 +736,7 @@ tagged decoders e =
                     context ("an element tagged #" ++ t) d <| f
 
                 Nothing ->
-                    Err <| "unknown tag: " ++ t
+                    Err <| "unexpected tag: " ++ t
 
         _ ->
             wrongType (Tagged "" Nil) e
