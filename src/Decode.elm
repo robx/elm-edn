@@ -11,6 +11,7 @@ module Decode
         , field
         , float
         , index
+        , instant
         , int
         , keyValuePairs
         , keyword
@@ -86,10 +87,11 @@ to decode JSON values.
 
 # Custom Types
 
-@docs tag
+@docs tag, instant
 
 -}
 
+import Date
 import Dict
 import Parse
 import Parser
@@ -775,3 +777,33 @@ oneOf decoders e =
 
         [] ->
             Err "oneOf: all decoders failed"
+
+
+{-| Decode an EDN instant to an Elm `Date`. An EDN instant
+is a tagged string of an ISO 8601 date.
+
+    import Date
+
+    decodeString instant
+        "#inst \"1985-04-12T23:20:50.52Z\""
+    --> Date.fromString "1985-04-12T23:20:50.52Z"
+    decodeString instant
+        "#inst \"1985-04-12T23:20:50.52+04:00\""
+    --> Date.fromString "1985-04-12T23:20:50.52+04:00"
+    decodeString instant
+        "\"1985-04-12T23:20:50.52Z\""
+    --> Err "expected a tagged element but found a string"
+
+-}
+instant : Decoder Date.Date
+instant =
+    tag "inst" string
+        |> andThen
+            (\s ->
+                case Date.fromString s of
+                    Ok d ->
+                        succeed d
+
+                    Err e ->
+                        fail e
+            )

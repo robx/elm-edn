@@ -1,5 +1,6 @@
 module Tests exposing (..)
 
+import Date
 import Decode
 import Dict
 import Encode
@@ -337,7 +338,21 @@ suite =
                         [ "\"hello world\" "
                             => "hello world"
                         ]
+            , test "#inst" <|
+                let
+                    expect =
+                        case Date.fromString "1985-04-12T23:20:50.52Z" of
+                            Ok d ->
+                                d
 
+                            Err e ->
+                                Debug.crash <| "bad date: " ++ e
+                in
+                \_ ->
+                    decode Decode.instant
+                        [ "#inst \"1985-04-12T23:20:50.52Z\""
+                            => expect
+                        ]
             ]
         , describe "module Encode"
             [ test "plain symbol" <|
