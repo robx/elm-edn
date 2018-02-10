@@ -11,8 +11,7 @@ library's [`Json.Decode`][1] and [`Json.Encode`][2]
 
 It's all still a bit rough around the edges, but the parsing and decoding
 should be mostly complete. Some element types are parsed correctly but
-not yet exposed through `Decode`, e.g. arbitrary precision numbers and
-characters.
+not yet exposed through `Decode`, e.g. arbitrary precision numbers.
 
 The encoding module is very much minimal effort so far, falling back
 to possibly incorrect string and number formatting primitives.
