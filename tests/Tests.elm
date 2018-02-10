@@ -1,5 +1,6 @@
 module Tests exposing (..)
 
+import Decode
 import Dict
 import Encode
 import Expect exposing (Expectation)
@@ -46,6 +47,13 @@ element =
 
 elements =
     Parse.onlyElements
+
+
+decode : Decode.Decoder a -> List ( String, a ) -> Expectation
+decode dec cs =
+    Expect.all
+        (List.map (\( s, x ) d -> Expect.equal (Ok x) (Decode.decodeString d s)) cs)
+        dec
 
 
 suite : Test
@@ -321,6 +329,15 @@ suite =
                         , "notthesecond/.1" => False
                         ]
                         (Parse.plainSymbol |. Parser.end)
+            ]
+        , describe "module Decode" <|
+            [ test "a simple string" <|
+                \_ ->
+                    decode Decode.string
+                        [ "\"hello world\" "
+                            => "hello world"
+                        ]
+
             ]
         , describe "module Encode"
             [ test "plain symbol" <|
