@@ -48,7 +48,7 @@ to decode JSON values.
 # Primitives
 
 @docs Decoder
-@docs bool, int, float, string
+@docs bool, int, float, string, char
 @docs nil, symbol, keyword
 
 
