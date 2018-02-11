@@ -125,6 +125,7 @@ sep : Parser ()
 sep =
     P.oneOf
         [ spaceSep
+        , P.end
         , P.lookAhead <|
             P.oneOf
                 [ P.symbol "("
@@ -134,7 +135,6 @@ sep =
                 , P.symbol "]"
                 , P.symbol "}"
                 , P.symbol "\""
-                , P.end
                 ]
         ]
 
