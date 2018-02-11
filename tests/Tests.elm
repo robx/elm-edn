@@ -9,6 +9,7 @@ import Fuzz exposing (Fuzzer, int, list, string)
 import Parse
 import Parser exposing ((|.))
 import Test exposing (..)
+import Thing as T
 import Types exposing (..)
 
 
@@ -78,6 +79,19 @@ suite =
                         , "(()()nil (nil))" => List [ List [], List [], Nil, List [ Nil ] ]
                         ]
                         element
+            , test "sample" <|
+                \_ ->
+                    parse
+                        [ "(12 (34))" => T.Things [ T.Number 12, T.Things [ T.Number 34 ] ]
+                        , "(())" => T.Things [ T.Things [] ]
+                        , "(()())" => T.Things [ T.Things [], T.Things [] ]
+                        , "(()44)" => T.Things [ T.Things [], T.Number 44 ]
+                        , "(()()123 (456))" => T.Things [ T.Things [], T.Things [], T.Number 123, T.Things [ T.Number 456 ] ]
+                        , "( 11 22  33 )" => T.Things [ T.Number 11, T.Number 22, T.Number 33 ]
+                        , "( 11 ( 22 )(  33) )" => T.Things [ T.Number 11, T.Things [ T.Number 22 ], T.Things [ T.Number 33 ] ]
+                        , "(1()2)" => T.Things [ T.Number 1, T.Things [], T.Number 2 ]
+                        ]
+                        T.thing
             , test "basic parsers" <|
                 \_ ->
                     parse
