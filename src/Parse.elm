@@ -15,7 +15,6 @@ import List
 import Parser as P exposing ((|.), (|=), Parser)
 import String
 import Types exposing (..)
-import Unicode
 
 
 seq : String -> String -> Parser (List Element)
@@ -218,7 +217,7 @@ unicodeEscape =
                 Nothing ->
                     0
     in
-    P.succeed (Unicode.unicode << hexrev << String.reverse)
+    P.succeed (Char.fromCode << hexrev << String.reverse)
         |. P.symbol "u"
         |= P.keep (P.Exactly 4) Char.isHexDigit
 
