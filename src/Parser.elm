@@ -12,11 +12,9 @@ module Parser
         , delayedCommitMap
         , end
         , fail
-        , float
         , ignore
         , ignoreUntil
         , inContext
-        , int
         , keep
         , keyword
         , lazy
@@ -73,8 +71,6 @@ module Parser
 
 -}
 
-import Char
-import Parser.Internal as Internal exposing (Parser(..), Step(..))
 import ParserPrimitives as Prim
 
 
@@ -85,16 +81,23 @@ import ParserPrimitives as Prim
 {-| A parser! If you have a `Parser Int`, it is a parser that turns
 strings into integers.
 -}
-type alias Parser a =
-    Internal.Parser Context Problem a
+type Parser a
+    = Parser (State -> Step a)
 
 
-type alias Step a =
-    Internal.Step Context Problem a
+type Step a
+    = Good a State
+    | Bad Problem State
 
 
 type alias State =
-    Internal.State Context
+    { source : String
+    , offset : Int
+    , indent : Int
+    , context : List Context
+    , row : Int
+    , col : Int
+    }
 
 
 {-| Actually run a parser.
@@ -675,193 +678,6 @@ token makeProblem str =
                     , row = newRow
                     , col = newCol
                     }
-
-
-
--- INT
-
-
-{-| Parse integers. It accepts decimal and hexidecimal formats.
-
-    -- decimal
-    run int "1234" == Ok 1234
-    run int "1.34" == Err ...
-    run int "1e31" == Err ...
-    run int "123a" == Err ...
-    run int "0123" == Err ...
-
-    -- hexidecimal
-    run int "0x001A" == Ok 26
-    run int "0x001a" == Ok 26
-    run int "0xBEEF" == Ok 48879
-    run int "0x12.0" == Err ...
-    run int "0x12an" == Err ...
-
-**Note:** If you want a parser for both `Int` and `Float` literals,
-check out [`Parser.LanguageKit.number`](Parser-LanguageKit#number).
-It does not backtrack, so it should be faster and give better error
-messages than using `oneOf` and combining `int` and `float` yourself.
-
-**Note:** If you want to enable octal or binary `Int` literals,
-check out [`Parser.LanguageKit.int`](Parser-LanguageKit#int).
-
--}
-int : Parser Int
-int =
-    Parser <|
-        \{ source, offset, indent, context, row, col } ->
-            case intHelp offset (Prim.isSubChar isZero offset source) source of
-                Err badOffset ->
-                    Bad BadInt
-                        { source = source
-                        , offset = badOffset
-                        , indent = indent
-                        , context = context
-                        , row = row
-                        , col = col + (badOffset - offset)
-                        }
-
-                Ok goodOffset ->
-                    case String.toInt (String.slice offset goodOffset source) of
-                        Err _ ->
-                            Debug.crash badIntMsg
-
-                        Ok n ->
-                            Good n
-                                { source = source
-                                , offset = goodOffset
-                                , indent = indent
-                                , context = context
-                                , row = row
-                                , col = col + (goodOffset - offset)
-                                }
-
-
-intHelp : Int -> Int -> String -> Result Int Int
-intHelp offset zeroOffset source =
-    if zeroOffset == -1 then
-        Internal.chompDigits Char.isDigit offset source
-
-    else if Prim.isSubChar isX zeroOffset source /= -1 then
-        Internal.chompDigits Char.isHexDigit (offset + 2) source
-        --  else if Prim.isSubChar isO zeroOffset source /= -1 then
-        --    Internal.chompDigits Char.isOctDigit (offset + 2) source
-
-    else if Prim.isSubChar Internal.isBadIntEnd zeroOffset source == -1 then
-        Ok zeroOffset
-
-    else
-        Err zeroOffset
-
-
-isZero : Char -> Bool
-isZero char =
-    char == '0'
-
-
-isO : Char -> Bool
-isO char =
-    char == 'o'
-
-
-isX : Char -> Bool
-isX char =
-    char == 'x'
-
-
-badIntMsg : String
-badIntMsg =
-    """The `Parser.int` parser seems to have a bug.
-Please report an SSCCE to <https://github.com/elm-tools/parser/issues>."""
-
-
-
--- FLOAT
-
-
-{-| Parse floats.
-
-    run float "123"       == Ok 123
-    run float "3.1415"    == Ok 3.1415
-    run float "0.1234"    == Ok 0.1234
-    run float ".1234"     == Ok 0.1234
-    run float "1e-42"     == Ok 1e-42
-    run float "6.022e23"  == Ok 6.022e23
-    run float "6.022E23"  == Ok 6.022e23
-    run float "6.022e+23" == Ok 6.022e23
-    run float "6.022e"    == Err ..
-    run float "6.022n"    == Err ..
-    run float "6.022.31"  == Err ..
-
-**Note:** If you want a parser for both `Int` and `Float` literals,
-check out [`Parser.LanguageKit.number`](Parser-LanguageKit#number).
-It does not backtrack, so it should be faster and give better error
-messages than using `oneOf` and combining `int` and `float` yourself.
-
-**Note:** If you want to disable literals like `.123` like Elm,
-check out [`Parser.LanguageKit.float`](Parser-LanguageKit#float).
-
--}
-float : Parser Float
-float =
-    Parser <|
-        \{ source, offset, indent, context, row, col } ->
-            case floatHelp offset (Prim.isSubChar isZero offset source) source of
-                Err badOffset ->
-                    Bad BadFloat
-                        { source = source
-                        , offset = badOffset
-                        , indent = indent
-                        , context = context
-                        , row = row
-                        , col = col + (badOffset - offset)
-                        }
-
-                Ok goodOffset ->
-                    case String.toFloat (String.slice offset goodOffset source) of
-                        Err _ ->
-                            Debug.crash badFloatMsg
-
-                        Ok n ->
-                            Good n
-                                { source = source
-                                , offset = goodOffset
-                                , indent = indent
-                                , context = context
-                                , row = row
-                                , col = col + (goodOffset - offset)
-                                }
-
-
-floatHelp : Int -> Int -> String -> Result Int Int
-floatHelp offset zeroOffset source =
-    if zeroOffset >= 0 then
-        Internal.chompDotAndExp zeroOffset source
-
-    else
-        let
-            dotOffset =
-                Internal.chomp Char.isDigit offset source
-
-            result =
-                Internal.chompDotAndExp dotOffset source
-        in
-        case result of
-            Err _ ->
-                result
-
-            Ok n ->
-                if n == offset then
-                    Err n
-
-                else
-                    result
-
-
-badFloatMsg : String
-badFloatMsg =
-    """The `Parser.float` parser seems to have a bug.
-Please report an SSCCE to <https://github.com/elm-tools/parser/issues>."""
 
 
 
