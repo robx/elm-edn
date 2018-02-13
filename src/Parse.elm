@@ -1,4 +1,4 @@
-module Parse exposing (isSymbol, onlyElement, onlyElements, plainSymbol)
+module Parse exposing (isSymbol, onlyElement, onlyElements, plainSymbol, plainTag)
 
 {-| Parsing EDN
 
@@ -21,7 +21,8 @@ seq : String -> String -> Parser (List Element)
 seq open close =
     P.succeed identity
         |. P.symbol open
-        |= elements
+        |. space
+        |= P.lazy (\_ -> elements)
         |. P.symbol close
 
 
@@ -29,6 +30,7 @@ discard : Parser ()
 discard =
     P.inContext "discard" <|
         P.symbol "#_"
+            |. space
             |. P.lazy (\_ -> element)
 
 
@@ -36,12 +38,7 @@ comment : Parser ()
 comment =
     P.symbol ";"
         |. P.ignore P.zeroOrMore (\c -> c /= '\n')
-        |. P.oneOf [ P.symbol "\n", P.end ]
-
-
-junk : Parser ()
-junk =
-    P.lazy (\_ -> P.oneOf [ discard, comment, spaceSep ])
+        |. P.oneOf [ P.symbol "\n", P.succeed () ]
 
 
 {-| Parse any number of EDN elements.
@@ -54,30 +51,14 @@ elements : Parser (List Element)
 elements =
     let
         junkOrElement =
-            P.lazy <|
-                \_ ->
-                    P.oneOf
-                        [ P.succeed Nothing |. junk
-                        , P.succeed Just |= element
-                        ]
+            P.oneOf
+                [ P.succeed Nothing |. P.lazy (\_ -> discard)
+                , P.succeed Nothing |. comment |. space
+                , P.succeed Just |= P.lazy (\_ -> element)
+                ]
     in
     P.succeed (List.filterMap identity)
         |= P.repeat P.zeroOrMore junkOrElement
-
-
-{-| Parse a single EDN element.
-
-Any whitespace, comments and discarded elements before the element
-will be consumed. What comes behind doesn't matter.
-
--}
-element : Parser Element
-element =
-    P.lazy <|
-        \_ ->
-            P.succeed identity
-                |. P.repeat P.zeroOrMore junk
-                |= realElement
 
 
 {-| Parse a single EDN element.
@@ -89,7 +70,19 @@ will fail.
 -}
 onlyElement : Parser Element
 onlyElement =
-    element |. P.repeat P.zeroOrMore junk |. P.end
+    onlyElements
+        |> P.andThen
+            (\es ->
+                case es of
+                    [ e ] ->
+                        P.succeed e
+
+                    [] ->
+                        P.fail "no element found"
+
+                    _ ->
+                        P.fail "more than one element found"
+            )
 
 
 {-| Parse any number of EDN elements.
@@ -99,25 +92,30 @@ The whole input will be consumed
 -}
 onlyElements : Parser (List Element)
 onlyElements =
-    elements |. P.end
+    P.succeed identity |. space |= elements |. P.end
 
 
-realElement : Parser Element
-realElement =
-    P.lazy <|
-        \_ ->
-            P.oneOf
-                [ list
-                , vector
-                , map
-                , set
-                , number
-                , string
-                , symbols
-                , ednKeyword
-                , tagged
-                , char
-                ]
+element : Parser Element
+element =
+    P.oneOf
+        [ P.succeed identity
+            |. P.lazy (\_ -> discard)
+            |= P.lazy (\_ -> element)
+        , P.succeed identity
+            |. comment
+            |= P.lazy (\_ -> element)
+        , P.lazy (\_ -> list)
+        , P.lazy (\_ -> vector)
+        , P.lazy (\_ -> map)
+        , P.lazy (\_ -> set)
+        , P.lazy (\_ -> tagged) -- commits on '#', so must be after discard and set
+        , number |. sep
+        , string
+        , symbols |. sep
+        , ednKeyword |. sep
+        , char |. sep
+        ]
+        |. space
 
 
 sep : Parser ()
@@ -282,7 +280,6 @@ char =
             , P.succeed stringToChar
                 |= P.keep (P.Exactly 1) (always True)
             ]
-        |. sep
 
 
 list : Parser Element
@@ -341,10 +338,22 @@ class s c =
     p c || q c
 
 
-{-| plainSymbol parses the symbol-part of EDN symbols, keywords, tags.
+{-| plainSymbol parses the symbol-part of EDN symbols and keywords.
 -}
 plainSymbol : Parser String
 plainSymbol =
+    plainSymbolHelper True
+
+
+{-| plainTag parses the symbol-part of EDN tags.
+-}
+plainTag : Parser String
+plainTag =
+    plainSymbolHelper False
+
+
+plainSymbolHelper : Bool -> Parser String
+plainSymbolHelper startUnderscore =
     let
         alpha =
             Char.isUpper ||| Char.isLower
@@ -359,10 +368,18 @@ plainSymbol =
             class "-+."
 
         notfirst =
-            class ":#"
+            if startUnderscore then
+                class ":#"
+
+            else
+                class "_:#"
 
         other =
-            class "*!_?$%&=<>"
+            if startUnderscore then
+                class "_*!?$%&=<>"
+
+            else
+                class "*!?$%&=<>"
 
         part =
             P.oneOf
@@ -429,7 +446,6 @@ symbols : Parser Element
 symbols =
     P.succeed fromSymbol
         |= plainSymbol
-        |. sep
 
 
 ednKeyword : Parser Element
@@ -437,7 +453,6 @@ ednKeyword =
     P.succeed Keyword
         |. P.symbol ":"
         |= plainSymbol
-        |. sep
 
 
 tagged : Parser Element
@@ -445,9 +460,9 @@ tagged =
     P.inContext "tagged" <|
         P.succeed Tagged
             |. P.symbol "#"
-            |= plainSymbol
+            |= plainTag
             |. sep
-            |= element
+            |= P.lazy (\_ -> element)
 
 
 type alias RawInteger =
@@ -505,7 +520,6 @@ rawNumber =
         |= P.oneOf [ P.map Just frac, P.succeed Nothing ]
         |= P.oneOf [ P.map Just exp, P.succeed Nothing ]
         |= P.oneOf [ P.map Just big, P.succeed Nothing ]
-        |. sep
 
 
 number : Parser Element

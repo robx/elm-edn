@@ -231,8 +231,14 @@ suite =
             , test "discard" <|
                 \_ ->
                     parse
-                        [ "(1 #_ #_ 2 3 4)"
-                            => List [ Int 1, Int 4 ]
+                        [ "#_1 2"
+                            => Int 2
+                        , "#_ 1 2"
+                            => Int 2
+                        , "#_()2"
+                            => Int 2
+                        , "#_ ( ) 2"
+                            => Int 2
                         , "#_nil nil"
                             => Nil
                         , "#_nil #_nil nil"
@@ -247,6 +253,12 @@ suite =
                             => List []
                         , "(#_#my/tag[2,3,4]#_nil,true#_,#_false)"
                             => List [ Symbol "true#_" ]
+                        , "#_ #_ 2 3 4"
+                            => Int 4
+                        , "(1 #_ #_ 2 3 4)"
+                            => List [ Int 1, Int 4 ]
+                        , "(1 #_#_2 3)"
+                            => List [ Int 1 ]
                         , "#_ #zap #_ xyz foo bar"
                             => Symbol "bar"
                         , "#_ #foo #foo #foo #_#_bar baz zip quux"
@@ -379,5 +391,23 @@ suite =
                     Expect.equal
                         (List.map Encode.toSymbol [ "nil", "true", "false" ])
                         [ Nothing, Nothing, Nothing ]
+            , test "to tag positive" <|
+                \_ ->
+                    Expect.equal
+                        (List.map
+                            (\t ->
+                                t
+                                    |> Encode.mustTag
+                                    |> (\tag -> Encode.tagged tag (Encode.int 1))
+                                    |> Encode.encode
+                            )
+                            [ "yo", "a/b" ]
+                        )
+                        [ "#yo 1", "#a/b 1" ]
+            , test "to tag negative" <|
+                \_ ->
+                    Expect.equal
+                        (List.map Encode.toTag [ "a/b/c", "_discard" ])
+                        [ Nothing, Nothing ]
             ]
         ]

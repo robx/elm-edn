@@ -120,6 +120,16 @@ plainSymbol s =
             False
 
 
+plainTag : String -> Bool
+plainTag s =
+    case Parser.run (Parse.plainTag |. Parser.end) s of
+        Ok _ ->
+            True
+
+        Err _ ->
+            False
+
+
 {-| Create a `Symbol` from an Elm `String`. This will fail
 and return `Nothing` if the string is not a valid symbol, compare
 the [EDN spec](https://github.com/edn-format/edn#symbols).
@@ -181,7 +191,7 @@ and `"false"`.
 -}
 toTag : String -> Maybe Tag
 toTag s =
-    if plainSymbol s then
+    if plainTag s then
         Just (Tag s)
 
     else
