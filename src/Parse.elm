@@ -21,7 +21,7 @@ seq : String -> String -> Parser (List Element)
 seq open close =
     P.succeed identity
         |. P.symbol open
-        |. space
+        |. junk
         |= P.lazy (\_ -> elements)
         |. P.symbol close
 
@@ -30,7 +30,7 @@ discard : Parser ()
 discard =
     P.inContext "discard" <|
         P.symbol "#_"
-            |. space
+            |. P.lazy (\_ -> junk)
             |. P.lazy (\_ -> element)
 
 
@@ -42,31 +42,13 @@ comment =
 
 
 {-| Parse any number of EDN elements.
-
-Any whitespace, comments and discarded elements at the start
-of the input will be consumed. What comes behind doesn't matter.
-
 -}
 elements : Parser (List Element)
 elements =
-    let
-        junkOrElement =
-            P.oneOf
-                [ P.succeed Nothing |. P.lazy (\_ -> discard)
-                , P.succeed Nothing |. comment |. space
-                , P.succeed Just |= P.lazy (\_ -> element)
-                ]
-    in
-    P.succeed (List.filterMap identity)
-        |= P.repeat P.zeroOrMore junkOrElement
+    P.repeat P.zeroOrMore (P.lazy (\_ -> element))
 
 
 {-| Parse a single EDN element.
-
-Whitepace, comments and discarded elements before and after the
-element will be consumed. If there is anything else the parser
-will fail.
-
 -}
 onlyElement : Parser Element
 onlyElement =
@@ -86,9 +68,6 @@ onlyElement =
 
 
 {-| Parse any number of EDN elements.
-
-The whole input will be consumed
-
 -}
 onlyElements : Parser (List Element)
 onlyElements =
@@ -115,7 +94,7 @@ element =
         , ednKeyword |. sep
         , char |. sep
         ]
-        |. space
+        |. P.lazy (\_ -> junk)
 
 
 sep : Parser ()
@@ -149,6 +128,18 @@ space =
 spaceSep : Parser ()
 spaceSep =
     P.ignore P.oneOrMore isSpace
+
+
+junk : Parser ()
+junk =
+    P.succeed ()
+        |. P.repeat P.zeroOrMore
+            (P.oneOf
+                [ P.lazy (\_ -> discard)
+                , comment
+                , spaceSep
+                ]
+            )
 
 
 unicodeEscape : Parser Char
