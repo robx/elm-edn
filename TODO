@@ -8,3 +8,5 @@
 * upstream Parser
 
 * floating point parsing: NaN, Inf
+
+* error messages
