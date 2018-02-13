@@ -348,6 +348,18 @@ tagged t =
 
 {-| Make a tagged EDN element from a `String` and an element.
 This will crash if the tag is not a valid EDN symbol.
+
+    type ID
+        = UserID Int
+        | Email String
+
+    encode <| list <|
+        List.map (\id -> case id of
+            UserID i -> mustTagged "my/uid" (int i)
+            Email e  -> mustTagged "my/email" (string e)
+        ) [ UserID 5, Email "alice@example.com" ]
+    --> """(#my/uid 5 #my/email "alice@example.com")"""
+
 -}
 mustTagged : String -> Element -> Element
 mustTagged s =
