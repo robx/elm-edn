@@ -111,6 +111,7 @@ sep =
                 , P.symbol "]"
                 , P.symbol "}"
                 , P.symbol "\""
+                , P.symbol ";"
                 ]
         ]
 

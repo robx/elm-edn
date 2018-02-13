@@ -311,6 +311,8 @@ suite =
                         , """;; first a comment
 (then a list)"""
                             => List [ Symbol "then", Symbol "a", Symbol "list" ]
+                        , "1;;this is a number"
+                            => Int 1
                         ]
                         element
             , test "space" <|
