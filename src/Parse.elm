@@ -51,26 +51,20 @@ elements =
 -}
 onlyElement : Parser Element
 onlyElement =
-    onlyElements
-        |> P.andThen
-            (\es ->
-                case es of
-                    [ e ] ->
-                        P.succeed e
-
-                    [] ->
-                        P.fail "no element found"
-
-                    _ ->
-                        P.fail "more than one element found"
-            )
+    P.succeed identity
+        |. junk
+        |= element
+        |. P.end
 
 
 {-| Parse any number of EDN elements.
 -}
 onlyElements : Parser (List Element)
 onlyElements =
-    P.succeed identity |. junk |= elements |. P.end
+    P.succeed identity
+        |. junk
+        |= elements
+        |. P.end
 
 
 element : Parser Element
