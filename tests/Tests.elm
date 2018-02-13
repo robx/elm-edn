@@ -175,7 +175,7 @@ suite =
             , test "triples" <|
                 \_ ->
                     parse
-                        [ """{:cols 4 :rows 3 :matchSize 3 :deckSize 0 :cards{}:scores{"Rob"{:match 0 :matchWrong 0 :noMatch 0 :noMatchWrong 0}}}
+                        [ """{:cols 4 :rows 3 :matchSize 3 :deckSize 0 :cards{}:scores{"Alice"{:match 0 :matchWrong 0 :noMatch 0 :noMatchWrong 0}}}
 """
                             => Map
                                 (Dict.fromList
@@ -186,7 +186,7 @@ suite =
                                     , ( "cards", toMap [] )
                                     , ( "scores"
                                       , toMap
-                                            [ ( String "Rob"
+                                            [ ( String "Alice"
                                               , Map
                                                     (Dict.fromList
                                                         [ ( "match", Int 0 )
@@ -202,13 +202,13 @@ suite =
                                     ]
                                 )
                                 []
-                        , """{:name"Rob"}"""
-                            => Map (Dict.fromList [ ( "name", String "Rob" ) ]) []
-                        , """#triples/eventClaimed{:name"Liz":type"match":result"wrong":score{ :match 0 :matchWrong 1 :noMatch 0 :noMatchWrong 1}}"""
+                        , """{:name"Alice"}"""
+                            => Map (Dict.fromList [ ( "name", String "Alice" ) ]) []
+                        , """#triples/eventClaimed{:name"Bob":type"match":result"wrong":score{ :match 0 :matchWrong 1 :noMatch 0 :noMatchWrong 1}}"""
                             => Tagged "triples/eventClaimed"
                                 (Map
                                     (Dict.fromList
-                                        [ ( "name", String "Liz" )
+                                        [ ( "name", String "Bob" )
                                         , ( "type", String "match" )
                                         , ( "result", String "wrong" )
                                         , ( "score"
