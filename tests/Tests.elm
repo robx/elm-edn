@@ -263,6 +263,8 @@ suite =
                             => Symbol "bar"
                         , "#_ #foo #foo #foo #_#_bar baz zip quux"
                             => Symbol "quux"
+                        , "(#_ whoops)"
+                            => List []
                         ]
                         element
             , test "looooooong list" <|
