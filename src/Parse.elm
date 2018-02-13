@@ -38,7 +38,6 @@ comment : Parser ()
 comment =
     P.symbol ";"
         |. P.ignore P.zeroOrMore (\c -> c /= '\n')
-        |. P.oneOf [ P.symbol "\n", P.succeed () ]
 
 
 {-| Parse any number of EDN elements.
@@ -71,7 +70,7 @@ onlyElement =
 -}
 onlyElements : Parser (List Element)
 onlyElements =
-    P.succeed identity |. space |= elements |. P.end
+    P.succeed identity |. junk |= elements |. P.end
 
 
 element : Parser Element
