@@ -35,6 +35,7 @@ module Decode
         , symbol
         , tag
         , tagged
+        , uuid
         , vector
         )
 
@@ -87,7 +88,7 @@ to decode JSON values.
 
 # Custom Types
 
-@docs tag, instant
+@docs tag, instant, uuid
 
 -}
 
@@ -95,6 +96,7 @@ import Date
 import Dict
 import Parse
 import Parser
+import Regex
 import Set
 import Types exposing (..)
 
@@ -806,4 +808,34 @@ instant =
 
                     Err e ->
                         fail e
+            )
+
+
+{-| Decode an EDN UUID to an Elm `String`.
+
+    decodeString uuid
+        "#uuid \"f81d4fae-7dec-11d0-a765-00a0c91e6bf6\""
+    --> Ok "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+    decodeString uuid
+        "#uuid \"F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6\""
+    --> Err "invalid UUID"
+    decodeString uuid
+        "\"f81d4fae-7dec-11d0-a765-00a0c91e6bf6\""
+    --> Err "expected a tagged element but found a string"
+
+-}
+uuid : Decoder String
+uuid =
+    let
+        r =
+            Regex.regex "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    in
+    tag "uuid" string
+        |> andThen
+            (\s ->
+                if Regex.contains r s then
+                    succeed s
+
+                else
+                    fail "invalid UUID"
             )
