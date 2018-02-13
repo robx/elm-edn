@@ -300,11 +300,15 @@ encode e =
             toString x
 
         Types.Float x ->
-            if toFloat (truncate x) == x then
-                toString x ++ ".0"
+            let
+                f =
+                    toString x
+            in
+            if String.any (\c -> c == 'e' || c == 'E' || c == '.') f then
+                f
 
             else
-                toString x
+                f ++ ".0"
 
         Types.String s ->
             Json.encode 0 (Json.string s)

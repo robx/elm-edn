@@ -413,5 +413,14 @@ suite =
                     Expect.equal
                         (List.map Encode.toTag [ "a/b/c", "_discard" ])
                         [ Nothing, Nothing ]
+            , test "floats" <|
+                let
+                    encFloat f =
+                        Encode.encode (Encode.float f)
+                in
+                \_ ->
+                    Expect.equal
+                        (List.map encFloat [ 0.0, 1.0, 1.5, 1.0e13, -3.14 ])
+                        [ "0.0", "1.0", "1.5", "10000000000000.0", "-3.14" ]
             ]
         ]
