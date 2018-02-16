@@ -10,7 +10,7 @@ The `Decode` and `Encode` modules are modeled on the standard library's
 
 ## Examples
 
-First two EDN messages, as used in [siren](https://github.com/alicebob/siren).
+First, two EDN messages, as used in [siren](https://github.com/alicebob/siren).
 
 ```
 statusMsg = """
