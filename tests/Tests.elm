@@ -434,5 +434,17 @@ suite =
 
                         Err err ->
                             Expect.fail (toString err)
+            , test "lots of whitespace" <|
+                let
+                    longThing =
+                        String.repeat 1000 ",\t\n " ++ "yo"
+                in
+                \_ ->
+                    case Parser.run element longThing of
+                        Ok _ ->
+                            Expect.pass
+
+                        Err err ->
+                            Expect.fail (toString err)
             ]
         ]

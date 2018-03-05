@@ -111,7 +111,7 @@ sep =
 
 isSpace : Char -> Bool
 isSpace c =
-    c == ',' || c == ' ' || c == '\t' || c == '\n' || c == '\x0D'
+    String.contains (String.fromChar c) ", \t\n\x0D"
 
 
 space : Parser ()
