@@ -267,19 +267,6 @@ suite =
                             => List []
                         ]
                         element
-            , test "looooooong list" <|
-                -- seems to scale linearly, ran up to 100k
-                let
-                    longList =
-                        "(" ++ String.repeat 1000 "()" ++ ")"
-                in
-                \_ ->
-                    case Parser.run element longList of
-                        Ok _ ->
-                            Expect.pass
-
-                        Err err ->
-                            Expect.fail (toString err)
             , test "numbers" <|
                 \_ ->
                     parse
@@ -422,5 +409,30 @@ suite =
                     Expect.equal
                         (List.map encFloat [ 0.0, 1.0, 1.5, 1.0e13, -3.14 ])
                         [ "0.0", "1.0", "1.5", "10000000000000.0", "-3.14" ]
+            , test "looooooong list" <|
+                -- seems to scale linearly, ran up to 100k
+                let
+                    longList =
+                        "(" ++ String.repeat 1000 "()" ++ ")"
+                in
+                \_ ->
+                    case Parser.run element longList of
+                        Ok _ ->
+                            Expect.pass
+
+                        Err err ->
+                            Expect.fail (toString err)
+            , test "lots of keywords" <|
+                let
+                    longList =
+                        "(" ++ String.repeat 1000 ":hey " ++ ")"
+                in
+                \_ ->
+                    case Parser.run element longList of
+                        Ok _ ->
+                            Expect.pass
+
+                        Err err ->
+                            Expect.fail (toString err)
             ]
         ]
