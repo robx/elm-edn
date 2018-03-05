@@ -313,16 +313,6 @@ set =
             |= (P.lazy <| \_ -> seq "#{" "}")
 
 
-class : String -> Char -> Bool
-class s c =
-    String.any ((==) c) s
-
-
-(|||) : (a -> Bool) -> (a -> Bool) -> a -> Bool
-(|||) p q c =
-    p c || q c
-
-
 {-| plainSymbol parses the symbol-part of EDN symbols and keywords.
 -}
 plainSymbol : Parser String
@@ -340,43 +330,45 @@ plainTag =
 plainSymbolHelper : Bool -> Parser String
 plainSymbolHelper startUnderscore =
     let
-        alpha =
-            Char.isUpper ||| Char.isLower
-
-        num =
-            Char.isDigit
-
-        alphanum =
-            alpha ||| num
+        class s c =
+            String.contains (String.fromChar c) s
 
         nosecondnum =
-            class "-+."
+            "-+."
 
         notfirst =
             if startUnderscore then
-                class ":#"
+                ":#"
 
             else
-                class "_:#"
+                "_:#"
 
         other =
             if startUnderscore then
-                class "_*!?$%&=<>"
+                "_*!?$%&=<>"
 
             else
-                class "*!?$%&=<>"
+                "*!?$%&=<>"
 
         part =
             P.oneOf
                 [ P.succeed (++)
-                    |= P.keep (P.Exactly 1) (alpha ||| other)
-                    |= P.keep P.zeroOrMore (alphanum ||| nosecondnum ||| notfirst ||| other)
+                    |= P.keep
+                        (P.Exactly 1)
+                        (\c -> Char.isUpper c || Char.isLower c || class other c)
+                    |= P.keep
+                        P.zeroOrMore
+                        (\c -> Char.isUpper c || Char.isLower c || Char.isDigit c || class (nosecondnum ++ notfirst ++ other) c)
                 , P.succeed (++)
-                    |= P.keep (P.Exactly 1) nosecondnum
+                    |= P.keep (P.Exactly 1) (class nosecondnum)
                     |= P.oneOf
                         [ P.succeed (++)
-                            |= P.keep (P.Exactly 1) (alpha ||| notfirst ||| other)
-                            |= P.keep P.zeroOrMore (alphanum ||| nosecondnum ||| notfirst ||| other)
+                            |= P.keep
+                                (P.Exactly 1)
+                                (\c -> Char.isUpper c || Char.isLower c || class (notfirst ++ other) c)
+                            |= P.keep
+                                P.zeroOrMore
+                                (\c -> Char.isUpper c || Char.isLower c || Char.isDigit c || class (nosecondnum ++ notfirst ++ other) c)
                         , P.succeed ""
                         ]
                 ]
