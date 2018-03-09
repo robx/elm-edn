@@ -7,6 +7,7 @@ module Encode
         , encode
         , float
         , int
+        , bool
         , keyword
         , list
         , mustKeyword
@@ -37,7 +38,7 @@ to encode JSON values.
 
 # Encoding basic types
 
-@docs string, int, float, symbol, keyword
+@docs string, int, bool, float, symbol, keyword
 
 
 # Containers
@@ -243,6 +244,13 @@ int =
     Types.Int
 
 
+{-| Make an EDN bool from an Elm `Bool`.
+-}
+bool : Bool -> Element
+bool =
+    Types.Bool
+
+
 {-| Make an EDN floating point number from an Elm `Float`.
 -}
 float : Float -> Element
@@ -296,6 +304,9 @@ mustObject =
 encode : Element -> String
 encode e =
     case e of
+        Types.Bool t ->
+            if t then "true" else "false"
+
         Types.Int x ->
             toString x
 
