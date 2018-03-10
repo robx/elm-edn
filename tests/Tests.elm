@@ -434,5 +434,17 @@ suite =
 
                         Err err ->
                             Expect.fail (toString err)
+            , test "lots of strings" <|
+                let
+                    longList =
+                        "(" ++ String.repeat 1000 "\"fo\\\"o\" " ++ ")"
+                in
+                \_ ->
+                    case Parser.run element longList of
+                        Ok _ ->
+                            Expect.pass
+
+                        Err err ->
+                            Expect.fail (toString err)
             ]
         ]

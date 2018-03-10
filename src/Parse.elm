@@ -111,7 +111,7 @@ sep =
 
 isSpace : Char -> Bool
 isSpace c =
-    c == ',' || c == ' ' || c == '\t' || c == '\n' || c == '\x0D'
+    String.contains (String.fromChar c) ", \t\n\x0D"
 
 
 space : Parser ()
@@ -226,7 +226,7 @@ string =
 
         part =
             P.oneOf
-                [ P.keep P.oneOrMore (\c -> c /= '\\' && c /= '"')
+                [ P.keep P.oneOrMore (\c -> not (String.contains (String.fromChar c) "\\\""))
                 , P.succeed identity
                     |. P.symbol "\\"
                     |= P.oneOf
@@ -461,7 +461,7 @@ rawNumber =
     let
         sign =
             P.oneOf
-                [ P.keep (P.Exactly 1) (\c -> c == '+' || c == '-')
+                [ P.keep (P.Exactly 1) (\c ->  String.contains (String.fromChar c) "+-")
                 , P.succeed "+"
                 ]
 
