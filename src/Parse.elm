@@ -251,17 +251,24 @@ string =
                     c
 
         part =
-            P.oneOf
-                [ P.keep P.oneOrMore (\c -> not (String.contains (String.fromChar c) "\\\""))
-                , P.succeed identity
-                    |. P.symbol "\\"
-                    |= P.oneOf
-                        [ P.succeed String.fromChar
-                            |= unicodeEscape
-                        , P.succeed esc
-                            |= P.keep (P.Exactly 1) (always True)
-                        ]
-                ]
+            P.byChar
+                (\c ->
+                    case c of
+                        '\\' ->
+                            Ok <|
+                                P.succeed identity
+                                    |. P.symbol "\\"
+                                    |= P.oneOf
+                                        [ P.succeed String.fromChar
+                                            |= unicodeEscape
+                                        , P.succeed esc
+                                            |= P.keep (P.Exactly 1) (always True)
+                                        ]
+
+                        _ ->
+                            Ok <|
+                                P.keep P.oneOrMore (\c -> not (String.contains (String.fromChar c) "\\\""))
+                )
     in
     P.succeed (String << String.concat)
         |. P.symbol "\""
