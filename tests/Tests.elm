@@ -9,6 +9,7 @@ import Fuzz exposing (Fuzzer, int, list, string)
 import Parse
 import Parser exposing ((|.))
 import Test exposing (..)
+import Testcases exposing (..)
 import Types exposing (..)
 
 
@@ -443,8 +444,12 @@ suite =
                             Expect.fail (toString err)
             , test "lots of strings" <|
                 let
-                    body1 = "fo\\\"o"
-                    wrap s = "\"" ++ s ++ "\""
+                    body1 =
+                        "fo\\\"o"
+
+                    wrap s =
+                        "\"" ++ s ++ "\""
+
                     longList =
                         "(" ++ String.repeat 10 (wrap (String.repeat 10 body1)) ++ ")"
                 in
@@ -452,6 +457,17 @@ suite =
                     repeat 10
                         (\_ ->
                             case Parser.run element longList of
+                                Ok _ ->
+                                    Expect.pass
+
+                                Err err ->
+                                    Expect.fail (toString err)
+                        )
+            , test "siren" <|
+                \_ ->
+                    repeat 40
+                        (\_ ->
+                            case Parser.run element casePlaylist of
                                 Ok _ ->
                                     Expect.pass
 
