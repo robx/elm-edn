@@ -465,7 +465,7 @@ suite =
                         )
             , test "siren" <|
                 \_ ->
-                    repeat 40
+                    repeat 1
                         (\_ ->
                             case Parser.run element casePlaylist of
                                 Ok _ ->
