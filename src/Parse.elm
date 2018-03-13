@@ -529,12 +529,42 @@ rawNumber =
                 ]
 
         digits =
-            P.oneOf
-                [ P.keep (P.Exactly 1) (\c -> c == '0')
-                , P.succeed (++)
-                    |= P.keep (P.Exactly 1) (\c -> Char.isDigit c && c /= '0')
-                    |= P.keep P.zeroOrMore (\c -> Char.isDigit c)
-                ]
+            P.byChar
+                (\c ->
+                    case c of
+                        '0' ->
+                            Ok <| P.keep (P.Exactly 1) (always True)
+
+                        '1' ->
+                            Ok <| P.keep P.oneOrMore (\c -> Char.isDigit c)
+
+                        '2' ->
+                            Ok <| P.keep P.oneOrMore (\c -> Char.isDigit c)
+
+                        '3' ->
+                            Ok <| P.keep P.oneOrMore (\c -> Char.isDigit c)
+
+                        '4' ->
+                            Ok <| P.keep P.oneOrMore (\c -> Char.isDigit c)
+
+                        '5' ->
+                            Ok <| P.keep P.oneOrMore (\c -> Char.isDigit c)
+
+                        '6' ->
+                            Ok <| P.keep P.oneOrMore (\c -> Char.isDigit c)
+
+                        '7' ->
+                            Ok <| P.keep P.oneOrMore (\c -> Char.isDigit c)
+
+                        '8' ->
+                            Ok <| P.keep P.oneOrMore (\c -> Char.isDigit c)
+
+                        '9' ->
+                            Ok <| P.keep P.oneOrMore (\c -> Char.isDigit c)
+
+                        _ ->
+                            Err "expected a digit"
+                )
 
         integer =
             P.succeed RawInteger
