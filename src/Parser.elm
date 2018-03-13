@@ -8,6 +8,7 @@ module Parser
         , Parser
         , Problem(..)
         , andThen
+        , byChar
         , delayedCommit
         , delayedCommitMap
         , end
@@ -495,6 +496,34 @@ oneOfHelp state problems parsers =
 
                     else
                         step
+
+
+peek : Parser Char
+peek =
+    lookAhead (keep (Exactly 1) (always True))
+        |> map
+            (\s ->
+                case String.uncons s of
+                    Just ( c, "" ) ->
+                        c
+
+                    _ ->
+                        Debug.crash "bad single-char string"
+            )
+
+
+byChar : (Char -> Result String (Parser a)) -> Parser a
+byChar f =
+    peek
+        |> andThen
+            (\c ->
+                case f c of
+                    Ok p ->
+                        p
+
+                    Err e ->
+                        fail e
+            )
 
 
 
