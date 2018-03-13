@@ -106,6 +106,36 @@ element =
                 '\\' ->
                     Ok <| char |. sep
 
+                '0' ->
+                    Ok <| number |. sep
+
+                '1' ->
+                    Ok <| number |. sep
+
+                '2' ->
+                    Ok <| number |. sep
+
+                '3' ->
+                    Ok <| number |. sep
+
+                '4' ->
+                    Ok <| number |. sep
+
+                '5' ->
+                    Ok <| number |. sep
+
+                '6' ->
+                    Ok <| number |. sep
+
+                '7' ->
+                    Ok <| number |. sep
+
+                '8' ->
+                    Ok <| number |. sep
+
+                '9' ->
+                    Ok <| number |. sep
+
                 _ ->
                     Ok <|
                         P.oneOf
