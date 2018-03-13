@@ -4,10 +4,10 @@ module Encode
         , Keyword
         , Symbol
         , Tag
+        , bool
         , encode
         , float
         , int
-        , bool
         , keyword
         , list
         , mustKeyword
@@ -305,7 +305,11 @@ encode : Element -> String
 encode e =
     case e of
         Types.Bool t ->
-            if t then "true" else "false"
+            if t then
+                "true"
+
+            else
+                "false"
 
         Types.Int x ->
             toString x
