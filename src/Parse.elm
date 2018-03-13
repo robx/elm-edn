@@ -461,7 +461,7 @@ rawNumber =
     let
         sign =
             P.oneOf
-                [ P.keep (P.Exactly 1) (\c ->  String.contains (String.fromChar c) "+-")
+                [ P.keep (P.Exactly 1) (\c -> String.contains (String.fromChar c) "+-")
                 , P.succeed "+"
                 ]
 
