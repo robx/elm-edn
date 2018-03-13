@@ -17,6 +17,11 @@ toMap l =
     Map Dict.empty l
 
 
+repeat : Int -> (() -> Expectation) -> Expectation
+repeat n f =
+    Expect.all (List.repeat n f) ()
+
+
 parse : List ( String, a ) -> Parser.Parser a -> Expectation
 parse cs =
     Expect.all <|
@@ -438,15 +443,20 @@ suite =
                             Expect.fail (toString err)
             , test "lots of strings" <|
                 let
+                    body1 = "fo\\\"o"
+                    wrap s = "\"" ++ s ++ "\""
                     longList =
-                        "(" ++ String.repeat 1000 "\"fo\\\"o\" " ++ ")"
+                        "(" ++ String.repeat 10 (wrap (String.repeat 10 body1)) ++ ")"
                 in
                 \_ ->
-                    case Parser.run element longList of
-                        Ok _ ->
-                            Expect.pass
+                    repeat 10
+                        (\_ ->
+                            case Parser.run element longList of
+                                Ok _ ->
+                                    Expect.pass
 
-                        Err err ->
-                            Expect.fail (toString err)
+                                Err err ->
+                                    Expect.fail (toString err)
+                        )
             ]
         ]
