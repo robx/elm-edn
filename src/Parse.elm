@@ -69,24 +69,50 @@ onlyElements =
 
 element : Parser Element
 element =
-    P.oneOf
-        [ P.succeed identity
-            |. P.lazy (\_ -> discard)
-            |= P.lazy (\_ -> element)
-        , P.succeed identity
-            |. comment
-            |= P.lazy (\_ -> element)
-        , P.lazy (\_ -> list)
-        , P.lazy (\_ -> vector)
-        , P.lazy (\_ -> map)
-        , P.lazy (\_ -> set)
-        , P.lazy (\_ -> tagged) -- commits on '#', so must be after discard and set
-        , number |. sep
-        , string
-        , symbols |. sep
-        , ednKeyword |. sep
-        , char |. sep
-        ]
+    P.byChar
+        (\c ->
+            case c of
+                '#' ->
+                    Ok <|
+                        P.oneOf
+                            [ P.succeed identity
+                                |. P.lazy (\_ -> discard)
+                                |= P.lazy (\_ -> element)
+                            , P.lazy (\_ -> set)
+                            , P.lazy (\_ -> tagged) -- commits on '#', so must be after discard and set
+                            ]
+
+                ';' ->
+                    Ok <|
+                        P.succeed identity
+                            |. comment
+                            |= P.lazy (\_ -> element)
+
+                '(' ->
+                    Ok <| P.lazy (\_ -> list)
+
+                '[' ->
+                    Ok <| P.lazy (\_ -> vector)
+
+                '{' ->
+                    Ok <| P.lazy (\_ -> map)
+
+                '"' ->
+                    Ok string
+
+                ':' ->
+                    Ok <| ednKeyword |. sep
+
+                '\\' ->
+                    Ok <| char |. sep
+
+                _ ->
+                    Ok <|
+                        P.oneOf
+                            [ number |. sep
+                            , symbols |. sep
+                            ]
+        )
         |. P.lazy (\_ -> junk)
 
 
